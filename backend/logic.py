@@ -666,7 +666,8 @@ def detect_conflicts_range(
                         summary["orphaned_in_gcal"] += 1
                         _add_sample("orphaned_in_gcal", {"event_id": ev_id, "rid": rid, "cal": cal_id})
                     else:
-                        if r.start != sdt or r.end != edt:
+                        # Comparar en local naive para evitar diferencias de offset/TZ
+                        if _to_naive_local(r.start) != _to_naive_local(sdt) or _to_naive_local(r.end) != _to_naive_local(edt):
                             summary["time_mismatch"] += 1
                             _add_sample("time_mismatch", {"rid": r.id, "event_id": ev_id})
                     continue

@@ -31,6 +31,13 @@ Thumbs.db
 *.log
 logs/
 
+# Local databases
+backend/data/*.db
+
+# Google OAuth tokens and client secrets (use env vars in prod)
+backend/oauth_tokens.json
+backend/autorizacion.json
+
 # Test coverage
 .coverage
 .pytest_cache/
