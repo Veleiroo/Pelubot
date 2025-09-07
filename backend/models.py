@@ -62,8 +62,15 @@ class ActionResult(BaseModel):
 class RescheduleIn(BaseModel):
     """Solicitud de reprogramación de reserva."""
     reservation_id: str = Field(..., json_schema_extra={"example": "res_1"})
+    # Modo clásico: especificar fecha y hora nuevas por separado (compatibilidad)
     new_date: Optional[str] = Field(None, json_schema_extra={"example": "2025-09-06"})
     new_time: Optional[str] = Field(None, json_schema_extra={"example": "18:30"})
+    # Modo alternativo: una marca temporal ISO (p. ej. devuelta por /slots)
+    # Este campo es opcional y, si está presente, tiene prioridad sobre (new_date,new_time).
+    new_start: Optional[str] = Field(
+        None,
+        json_schema_extra={"example": "2025-09-06T18:30:00+02:00"}
+    )
     professional_id: Optional[str] = Field(None, json_schema_extra={"example": "ana"})
 class RescheduleOut(BaseModel):
     """Respuesta de reprogramación."""

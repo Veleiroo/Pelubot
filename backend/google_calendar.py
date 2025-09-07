@@ -300,3 +300,80 @@ def list_events_range(service: Any, calendar_id: str, time_min_iso: str, time_ma
         return items
     except Exception as e:
         raise RuntimeError(f"Error listando eventos: {e}")
+
+def list_events_allpages(
+    service: Any,
+    calendar_id: str,
+    time_min: Optional[str] = None,
+    time_max: Optional[str] = None,
+    tz: str = "Europe/Madrid",
+) -> List[Dict[str, Any]]:
+    """
+    Lista eventos con paginación opcionalmente en un rango.
+    Si no se proveen time_min/time_max, usa un rango amplio.
+    """
+    params = {"calendarId": calendar_id}
+    # Para ordenar por startTime y singleEvents, Google exige timeMin.
+    if time_min or time_max:
+        if time_min:
+            params["timeMin"] = iso_datetime(time_min, tz)
+        if time_max:
+            params["timeMax"] = iso_datetime(time_max, tz)
+        params.update({"singleEvents": True, "orderBy": "startTime", "timeZone": tz})
+    else:
+        # Rango por defecto muy amplio
+        params.update({
+            "timeMin": "1970-01-01T00:00:00+00:00",
+            "timeMax": "2100-01-01T00:00:00+00:00",
+            "singleEvents": True,
+            "orderBy": "startTime",
+            "timeZone": tz,
+        })
+    items: List[Dict[str, Any]] = []
+    page_token: Optional[str] = None
+    try:
+        while True:
+            if page_token:
+                params["pageToken"] = page_token
+            resp = service.events().list(**params).execute()
+            items.extend(resp.get("items", []))
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+    except Exception as e:
+        raise RuntimeError(f"Error listando eventos (paginado): {e}")
+    return items
+
+def clear_calendar(
+    service: Any,
+    calendar_id: str,
+    time_min: Optional[str] = None,
+    time_max: Optional[str] = None,
+    only_pelubot: bool = False,
+    dry_run: bool = False,
+    tz: str = "Europe/Madrid",
+) -> Dict[str, Any]:
+    """
+    Elimina eventos de un calendario. Si only_pelubot=True, filtra por extendedProperties.private.reservation_id.
+    Devuelve {total_listed, deleted, skipped}.
+    """
+    items = list_events_allpages(service, calendar_id, time_min, time_max, tz)
+    deleted = skipped = 0
+    for it in items:
+        ev_id = it.get("id")
+        if not ev_id:
+            continue
+        if only_pelubot:
+            priv = (it.get("extendedProperties") or {}).get("private") or {}
+            if not priv.get("reservation_id"):
+                skipped += 1
+                continue
+        if not dry_run:
+            try:
+                service.events().delete(calendarId=calendar_id, eventId=ev_id).execute()
+            except Exception:
+                # cuenta como omitido si falló
+                skipped += 1
+                continue
+        deleted += 1
+    return {"total_listed": len(items), "deleted": deleted, "skipped": skipped}

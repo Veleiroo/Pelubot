@@ -12,6 +12,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlmodel import Session, select
+from pydantic import BaseModel
 
 from data import (
     SERVICES, PROS, SERVICE_BY_ID, PRO_BY_ID,
@@ -30,11 +31,15 @@ from logic import (
     patch_gcal_reservation,
     delete_gcal_reservation,
     get_calendar_for_professional,
+    sync_from_gcal_range,
+    reconcile_db_to_gcal_range,
+    detect_conflicts_range,
 )
 from db import get_session, engine
 
 from utils.date import validate_target_dt, TZ
 from datetime import timezone as _utc_tz
+from google_calendar import build_calendar, list_events_allpages, clear_calendar
 
 logger = logging.getLogger("pelubot.api")
 
@@ -218,7 +223,18 @@ def reschedule_post(
         raise HTTPException(status_code=404, detail="La reserva no existe")
 
     # Prevalidación si tenemos fecha/hora nuevas explícitas
-    if payload.new_date and payload.new_time:
+    if payload.new_start:
+        # Validación de marca temporal ISO completa
+        try:
+            new_start = datetime.fromisoformat(str(payload.new_start).replace("Z", "+00:00"))
+            if new_start.tzinfo is None:
+                new_start = new_start.replace(tzinfo=TZ)
+            validate_target_dt(new_start)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="new_start inválido (ISO 8601 requerido).")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    elif payload.new_date and payload.new_time:
         try:
             new_start = datetime.strptime(f"{payload.new_date} {payload.new_time}", "%Y-%m-%d %H:%M")
             if new_start.tzinfo is None:
@@ -421,3 +437,193 @@ def create_reservation(
     )
     return ActionResult(ok=True, message=f"Reserva creada y sincronizada. ID: {res_id}, Evento: {gcal_id}")
 
+# ---------------------
+# Admin: sincronización y conflictos
+# ---------------------
+class AdminSyncIn(BaseModel):
+    mode: str | None = None  # import | push | both
+    start: str | None = None  # YYYY-MM-DD
+    end: str | None = None    # YYYY-MM-DD
+    days: int | None = None   # si se indica, ignora end
+    by_professional: bool | None = True
+    calendar_id: str | None = None
+    professional_id: str | None = None
+    default_service: str | None = None
+
+
+@router.post("/admin/sync")
+def admin_sync(
+    body: AdminSyncIn | None = None,
+    session: Session = Depends(get_session),
+    _=Depends(require_api_key),
+):
+    """
+    Dispara sincronización con Google Calendar:
+      - mode=import (GCAL -> BD)
+      - mode=push (BD -> GCAL)
+      - mode=both
+    Permite limitar por rango de fechas y por profesional/calendario.
+    """
+    from datetime import date, timedelta
+    body = body or AdminSyncIn()
+    mode = (body.mode or "import").lower()
+    # rango
+    if body.start:
+        start = date.fromisoformat(body.start)
+    else:
+        start = date.today()
+    if body.end:
+        end = date.fromisoformat(body.end)
+    else:
+        days = body.days if body.days and body.days > 0 else 7
+        end = start + timedelta(days=max(0, days - 1))
+    by_prof = True if body.by_professional is None else bool(body.by_professional)
+
+    results: dict[str, dict] = {}
+    if mode in ("import", "both"):
+        results["import"] = sync_from_gcal_range(
+            session,
+            start,
+            end,
+            default_service=body.default_service or "corte",
+            by_professional=by_prof,
+            calendar_id=body.calendar_id,
+            professional_id=body.professional_id,
+        )
+    if mode in ("push", "both"):
+        results["push"] = reconcile_db_to_gcal_range(
+            session,
+            start,
+            end,
+            by_professional=by_prof,
+            calendar_id=body.calendar_id,
+            professional_id=body.professional_id,
+        )
+    return {"ok": True, "mode": mode, "range": (start.isoformat(), end.isoformat()), "results": results}
+
+
+class AdminConflictsIn(BaseModel):
+    start: str | None = None
+    end: str | None = None
+    days: int | None = None
+    by_professional: bool | None = True
+    calendar_id: str | None = None
+    professional_id: str | None = None
+
+
+@router.post("/admin/conflicts")
+def admin_conflicts(
+    body: AdminConflictsIn | None = None,
+    session: Session = Depends(get_session),
+    _=Depends(require_api_key),
+):
+    """
+    Detecta y resume conflictos BD ↔ Google Calendar en un rango de fechas.
+    """
+    from datetime import date, timedelta
+    body = body or AdminConflictsIn()
+    if body.start:
+        start = date.fromisoformat(body.start)
+    else:
+        start = date.today()
+    if body.end:
+        end = date.fromisoformat(body.end)
+    else:
+        days = body.days if body.days and body.days > 0 else 7
+        end = start + timedelta(days=max(0, days - 1))
+    by_prof = True if body.by_professional is None else bool(body.by_professional)
+    summary = detect_conflicts_range(
+        session,
+        start,
+        end,
+        by_professional=by_prof,
+        calendar_id=body.calendar_id,
+        professional_id=body.professional_id,
+    )
+    return {"ok": bool(summary.get("ok")), "range": (start.isoformat(), end.isoformat()), **summary}
+
+
+class AdminClearCalendarsIn(BaseModel):
+    by_professional: bool | None = True
+    calendar_id: str | None = None
+    calendar_ids: list[str] | None = None
+    start: str | None = None  # YYYY-MM-DD
+    end: str | None = None    # YYYY-MM-DD
+    only_pelubot: bool | None = False
+    dry_run: bool | None = True
+    confirm: str | None = None  # Debe ser "DELETE" para ejecutar si dry_run=False
+
+
+@router.post("/admin/clear_calendars")
+def admin_clear_calendars(
+    body: AdminClearCalendarsIn | None = None,
+    _=Depends(require_api_key),
+):
+    """
+    Borra eventos de los calendarios configurados.
+    Seguridad: si `dry_run` es False, `confirm` debe ser "DELETE".
+    Por defecto borra TODO (only_pelubot=False). Si se desea conservar eventos ajenos, setear `only_pelubot=True`.
+    """
+    from data import PRO_CALENDAR
+    body = body or AdminClearCalendarsIn()
+
+    # Seguridad
+    if not (body.dry_run or (body.confirm and body.confirm.upper() == "DELETE")):
+        return {"ok": False, "error": "Confirmación requerida: setea confirm='DELETE' o usa dry_run=true"}
+
+    # Calendarios destino
+    cals: list[str] = []
+    if body.calendar_ids:
+        cals.extend([c for c in body.calendar_ids if c])
+    if body.calendar_id:
+        cals.append(body.calendar_id)
+    if body.by_professional or not cals:
+        cals.extend([v for v in PRO_CALENDAR.values() if v])
+    # dedup
+    cals = sorted(set(cals))
+    if not cals:
+        return {"ok": False, "error": "No hay calendarios destino"}
+
+    # Rango opcional
+    tmin = tmax = None
+    if body.start:
+        tmin = f"{body.start}T00:00:00"
+    if body.end:
+        tmax = f"{body.end}T23:59:59"
+
+    try:
+        svc = build_calendar()
+    except Exception as e:
+        return {"ok": False, "error": f"gcal client: {e}"}
+
+    results = {}
+    total_deleted = 0
+    total_listed = 0
+    total_skipped = 0
+    for cal in cals:
+        res = clear_calendar(
+            svc,
+            cal,
+            time_min=tmin,
+            time_max=tmax,
+            only_pelubot=bool(body.only_pelubot),
+            dry_run=bool(body.dry_run),
+        )
+        results[cal] = res
+        total_deleted += res.get("deleted", 0)
+        total_listed += res.get("total_listed", 0)
+        total_skipped += res.get("skipped", 0)
+
+    return {
+        "ok": True,
+        "dry_run": bool(body.dry_run),
+        "only_pelubot": bool(body.only_pelubot),
+        "calendars": cals,
+        "range": (body.start, body.end),
+        "totals": {
+            "listed": total_listed,
+            "deleted": total_deleted,
+            "skipped": total_skipped,
+        },
+        "results": results,
+    }

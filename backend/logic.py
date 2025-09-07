@@ -216,6 +216,9 @@ def _fits_in_schedule(start_dt: datetime, duration_min: int) -> bool:
 def apply_reschedule(session: Session, payload: RescheduleIn) -> Tuple[bool, str, Optional[ReservationDB]]:
     """
     Aplica la reprogramación de una reserva, validando horarios y profesional (persistente).
+    Acepta dos modos de entrada:
+    - (new_date, new_time)
+    - new_start (ISO 8601)
     """
     r = find_reservation(session, payload.reservation_id)
     if not r:
@@ -223,34 +226,49 @@ def apply_reschedule(session: Session, payload: RescheduleIn) -> Tuple[bool, str
 
     service = SERVICE_BY_ID[r.service_id]
 
-    if payload.new_date:
+    # Soporta new_start (ISO) como atajo; si no, usa (new_date,new_time)
+    new_start_dt: Optional[datetime] = None
+    if getattr(payload, "new_start", None):
         try:
-            new_date = datetime.strptime(payload.new_date, "%Y-%m-%d").date()
+            # Convierte ISO -> datetime; si no trae tz, se asume TZ local
+            new_start_dt = datetime.fromisoformat(str(payload.new_start).replace("Z", "+00:00"))
+            if new_start_dt.tzinfo is None:
+                new_start_dt = new_start_dt.replace(tzinfo=ZoneInfo(TZ))
         except Exception:
-            return False, "new_date inválida. Usa YYYY-MM-DD.", None
-    else:
-        new_date = r.start.date()
+            return False, "new_start inválido. Usa ISO 8601.", None
 
-    if payload.new_time:
-        try:
-            new_time = datetime.strptime(payload.new_time, "%H:%M").time()
-        except Exception:
-            return False, "new_time inválida. Usa HH:MM (24h).", None
-    else:
-        new_time = r.start.time()
+    if new_start_dt is None:
+        if payload.new_date:
+            try:
+                new_date = datetime.strptime(payload.new_date, "%Y-%m-%d").date()
+            except Exception:
+                return False, "new_date inválida. Usa YYYY-MM-DD.", None
+        else:
+            new_date = r.start.date()
+
+        if payload.new_time:
+            try:
+                new_time = datetime.strptime(payload.new_time, "%H:%M").time()
+            except Exception:
+                return False, "new_time inválida. Usa HH:MM (24h).", None
+        else:
+            new_time = r.start.time()
+        new_start_dt = datetime.combine(new_date, new_time)
 
     new_pro = payload.professional_id or r.professional_id
     if new_pro not in PRO_BY_ID:
         return False, "professional_id no existe.", None
 
-    start_dt = datetime.combine(new_date, new_time)
+    # Normaliza a naive local para validaciones de horario/solapes
+    start_dt = _to_naive_local(new_start_dt)
     end_dt = start_dt + timedelta(minutes=service.duration_min)
 
     if not _fits_in_schedule(start_dt, service.duration_min):
         return False, "La nueva hora no encaja en el horario.", None
 
-    # solapes locales
-    for x in _reservations_for_prof_on_date(session, new_pro, new_date):
+    # solapes locales (mismo día)
+    day_date = start_dt.date()
+    for x in _reservations_for_prof_on_date(session, new_pro, day_date):
         if x.id == r.id:
             continue
         if not (end_dt <= x.start or start_dt >= x.end):
@@ -420,3 +438,247 @@ def sync_from_gcal_range(
             d += timedelta(days=1)
         session.commit()
     return {"ok": True, "inserted": total_ins, "updated": total_upd, "calendars": len(pairs)}
+
+
+# --- Reconciliación DB → Google Calendar (empujar cambios locales) ---
+def reconcile_db_to_gcal_range(
+    session: Session,
+    start_date: date,
+    end_date: date,
+    by_professional: bool = True,
+    calendar_id: str | None = None,
+    professional_id: str | None = None,
+    tz: str = os.getenv("TZ", "Europe/Madrid"),
+) -> dict:
+    """
+    Asegura que los eventos en Google Calendar reflejan lo que hay en la BD
+    en el rango [start_date, end_date]. Para cada reserva local:
+      - Si no existe evento en GCAL, lo crea.
+      - Si existe pero con horario distinto, lo actualiza (patch).
+      - Si el calendario de destino cambió por profesional, recrea el evento.
+
+    Retorna: {created: int, patched: int, calendars: int, ok: bool}
+    """
+    from data import PRO_CALENDAR  # import local para evitar ciclos
+
+    try:
+        svc = build_calendar()
+    except Exception:
+        return {"ok": False, "created": 0, "patched": 0, "calendars": 0, "error": "gcal client"}
+
+    pairs: list[tuple[str, str | None]] = []
+    if by_professional:
+        for pid, cal in PRO_CALENDAR.items():
+            pairs.append((cal, pid))
+    else:
+        if not calendar_id:
+            return {"ok": False, "created": 0, "patched": 0, "calendars": 0, "error": "calendar_id requerido"}
+        pairs.append((calendar_id, professional_id))
+
+    created = patched = 0
+
+    # Helper: rangos por día para limitar listados
+    def _day_bounds(d: date):
+        return datetime.combine(d, time(0, 0)), datetime.combine(d, time(23, 59, 59))
+
+    for cal_id, pro_id in pairs:
+        d = start_date
+        while d <= end_date:
+            day_start, day_end = _day_bounds(d)
+            # Eventos actuales en GCAL para comparación rápida por id
+            try:
+                gitems = list_events_range(svc, cal_id, iso_datetime(day_start, tz), iso_datetime(day_end, tz), tz)
+            except Exception:
+                gitems = []
+            gmap = {it.get("id"): it for it in gitems if it.get("id")}
+
+            # Reservas locales que solapan el día
+            q = (
+                select(ReservationDB)
+                .where(ReservationDB.start < day_end)
+                .where(ReservationDB.end > day_start)
+            )
+            if pro_id:
+                q = q.where(ReservationDB.professional_id == pro_id)
+            rows = list(session.exec(q))
+
+            for r in rows:
+                target_cal = get_calendar_for_professional(r.professional_id)
+                # Si el calendario ha cambiado, recreamos el evento en el nuevo cal
+                if r.google_event_id and r.google_calendar_id and r.google_calendar_id != target_cal:
+                    try:
+                        delete_event(svc, r.google_calendar_id, r.google_event_id)
+                    except Exception:
+                        pass  # tolerante a fallos: seguimos y creamos en el destino
+                    ev = create_event(
+                        svc,
+                        target_cal,
+                        r.start,
+                        r.end,
+                        summary=f"Reserva: {r.service_id} - {r.professional_id}",
+                        private_props={"reservation_id": r.id, "professional_id": r.professional_id, "service_id": r.service_id},
+                        tz=tz,
+                    )
+                    r.google_event_id = ev.get("id")
+                    r.google_calendar_id = target_cal
+                    session.add(r)
+                    created += 1
+                    continue
+
+                # Evento inexistente en GCAL -> crearlo
+                if not r.google_event_id or r.google_event_id not in gmap:
+                    ev = create_event(
+                        svc,
+                        target_cal,
+                        r.start,
+                        r.end,
+                        summary=f"Reserva: {r.service_id} - {r.professional_id}",
+                        private_props={"reservation_id": r.id, "professional_id": r.professional_id, "service_id": r.service_id},
+                        tz=tz,
+                    )
+                    r.google_event_id = ev.get("id")
+                    r.google_calendar_id = target_cal
+                    session.add(r)
+                    created += 1
+                    continue
+
+                # Existe: ajustar horario si difiere
+                it = gmap.get(r.google_event_id)
+                try:
+                    gs = (it.get("start") or {}).get("dateTime") or (it.get("start") or {}).get("date")
+                    ge = (it.get("end") or {}).get("dateTime") or (it.get("end") or {}).get("date")
+                except Exception:
+                    gs = ge = None
+                if gs and ge:
+                    gs_dt = _parse_gcal_dt(gs)
+                    ge_dt = _parse_gcal_dt(ge)
+                    if gs_dt != r.start or ge_dt != r.end:
+                        patch_event(svc, target_cal, r.google_event_id, r.start, r.end, tz)
+                        patched += 1
+
+            d += timedelta(days=1)
+        session.commit()
+
+    return {"ok": True, "created": created, "patched": patched, "calendars": len(pairs)}
+
+
+# --- Detección de conflictos BD ↔ Google Calendar ---
+def detect_conflicts_range(
+    session: Session,
+    start_date: date,
+    end_date: date,
+    by_professional: bool = True,
+    calendar_id: str | None = None,
+    professional_id: str | None = None,
+    tz: str = os.getenv("TZ", "Europe/Madrid"),
+) -> dict:
+    """
+    Busca inconsistencias entre la BD y Google Calendar en [start_date, end_date].
+    Tipos de conflicto detectados:
+      - missing_in_gcal: reservas locales sin evento en Calendar.
+      - orphaned_in_gcal: eventos en Calendar con reservation_id que no existe en BD.
+      - time_mismatch: misma reserva pero horarios diferentes.
+      - overlaps_external: evento en Calendar (sin reservation_id) que solapa una reserva local.
+    Devuelve un resumen con contadores y ejemplos.
+    """
+    try:
+        svc = build_calendar()
+    except Exception as e:
+        return {"ok": False, "error": f"gcal client: {e}"}
+
+    from data import PRO_CALENDAR  # evitar ciclos
+    pairs: list[tuple[str, str | None]] = []
+    if by_professional:
+        for pid, cal in PRO_CALENDAR.items():
+            pairs.append((cal, pid))
+    else:
+        if not calendar_id:
+            return {"ok": False, "error": "calendar_id requerido"}
+        pairs.append((calendar_id, professional_id))
+
+    summary = {
+        "ok": True,
+        "calendars": len(pairs),
+        "missing_in_gcal": 0,
+        "orphaned_in_gcal": 0,
+        "time_mismatch": 0,
+        "overlaps_external": 0,
+        "samples": {
+            "missing_in_gcal": [],
+            "orphaned_in_gcal": [],
+            "time_mismatch": [],
+            "overlaps_external": [],
+        },
+    }
+
+    def _add_sample(kind: str, item: dict):
+        arr = summary["samples"][kind]
+        if len(arr) < 10:
+            arr.append(item)
+
+    d = start_date
+    while d <= end_date:
+        day_start = datetime.combine(d, time(0, 0))
+        day_end = datetime.combine(d, time(23, 59, 59))
+        for cal_id, pro_id in pairs:
+            # Eventos del día en GCAL
+            try:
+                items = list_events_range(svc, cal_id, iso_datetime(day_start, tz), iso_datetime(day_end, tz), tz)
+            except Exception:
+                items = []
+            gmap = {it.get("id"): it for it in items if it.get("id")}
+
+            # Reservas locales que solapan el día
+            q = (
+                select(ReservationDB)
+                .where(ReservationDB.start < day_end)
+                .where(ReservationDB.end > day_start)
+            )
+            if pro_id:
+                q = q.where(ReservationDB.professional_id == pro_id)
+            locals_rows = list(session.exec(q))
+
+            # Índices de ayuda
+            by_gevent = {r.google_event_id: r for r in locals_rows if r.google_event_id}
+
+            # 1) reservas locales sin evento en GCAL
+            for r in locals_rows:
+                tgt_cal = get_calendar_for_professional(r.professional_id)
+                if not r.google_event_id or r.google_event_id not in gmap or (r.google_calendar_id and r.google_calendar_id != tgt_cal):
+                    summary["missing_in_gcal"] += 1
+                    _add_sample("missing_in_gcal", {"id": r.id, "cal": tgt_cal, "start": r.start.isoformat()})
+
+            # 2) revisar eventos de GCAL y detectar orphans / solapes externos / desajustes
+            for it in items:
+                ev_id = it.get("id")
+                start_v = (it.get("start") or {}).get("dateTime") or (it.get("start") or {}).get("date")
+                end_v = (it.get("end") or {}).get("dateTime") or (it.get("end") or {}).get("date")
+                if not start_v or not end_v:
+                    continue
+                sdt = _parse_gcal_dt(start_v)
+                edt = _parse_gcal_dt(end_v)
+                priv = (it.get("extendedProperties") or {}).get("private") or {}
+                rid = priv.get("reservation_id")
+
+                if rid:
+                    r = session.get(ReservationDB, rid)
+                    if not r:
+                        summary["orphaned_in_gcal"] += 1
+                        _add_sample("orphaned_in_gcal", {"event_id": ev_id, "rid": rid, "cal": cal_id})
+                    else:
+                        if r.start != sdt or r.end != edt:
+                            summary["time_mismatch"] += 1
+                            _add_sample("time_mismatch", {"rid": r.id, "event_id": ev_id})
+                    continue
+
+                # Sin reservation_id: si solapa con alguna reserva local distinta -> conflicto externo
+                for r in locals_rows:
+                    if r.google_event_id == ev_id:
+                        continue
+                    if not (edt <= r.start or sdt >= r.end):
+                        summary["overlaps_external"] += 1
+                        _add_sample("overlaps_external", {"event_id": ev_id, "rid": r.id})
+                        break
+        d += timedelta(days=1)
+
+    return summary
