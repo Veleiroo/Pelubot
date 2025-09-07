@@ -13,7 +13,7 @@ from sqlmodel import SQLModel, create_engine, Session
 ROOT = Path(__file__).resolve().parents[1]
 APP_FILE = ROOT / "main.py"
 
-# 🔧 AÑADIR el directorio del proyecto al sys.path para que 'utils', 'core', etc. se puedan importar
+# Añade el directorio del proyecto al sys.path para permitir importar 'utils', 'core', etc.
 root_str = str(ROOT)
 if root_str not in sys.path:
     sys.path.insert(0, root_str)
@@ -37,7 +37,7 @@ def _import_app_and_deps():
 def app_client(monkeypatch):
     models, db, routes, main = _import_app_and_deps()
 
-    # ✅ Engine de test: una sola conexión en memoria para TODAS las sesiones
+    # Engine de prueba: una sola conexión en memoria para todas las sesiones
     engine = create_engine(
         "sqlite://",  # equivalente a :memory: pero con StaticPool
         connect_args={"check_same_thread": False},

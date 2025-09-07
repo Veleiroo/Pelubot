@@ -1,14 +1,13 @@
 # routes.py
 """
 Módulo de rutas y endpoints de la API de reservas de peluquería.
-Incluye endpoints para servicios, profesionales, slots, reservas y webhook de WhatsApp.
+Incluye endpoints para servicios, profesionales, slots y reservas.
 """
 
 from __future__ import annotations
 from datetime import datetime, timedelta, time
 import os
 import uuid
-import re
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends, Request
@@ -33,7 +32,6 @@ from logic import (
     get_calendar_for_professional,
 )
 from db import get_session, engine
-from whatsapp_api import send_whatsapp_message
 
 from utils.date import validate_target_dt, TZ
 from datetime import timezone as _utc_tz
@@ -423,146 +421,3 @@ def create_reservation(
     )
     return ActionResult(ok=True, message=f"Reserva creada y sincronizada. ID: {res_id}, Evento: {gcal_id}")
 
-# ---------------------
-# Webhook WhatsApp (Twilio)
-# ---------------------
-@router.post("/whatsapp/webhook")
-async def whatsapp_webhook(request: Request, session: Session = Depends(get_session)):
-    """
-    Webhook de Twilio (WhatsApp). Comandos MVP:
-      - 'precios'
-      - 'horario'
-      - 'slots <servicio> <YYYY-MM-DD> [prof]'
-      - 'reservar <servicio> <YYYY-MM-DD> <HH:MM> [prof]'
-    """
-    form = await request.form()
-    from_number = (form.get("From", "") or "").replace("whatsapp:", "")
-    body_raw = (form.get("Body", "") or "").strip()
-    body = body_raw.lower()
-
-    def reply(text: str):
-        send_whatsapp_message(from_number, text)
-        return {"status": "ok"}
-
-    # 1) Precios
-    if "precio" in body:
-        parts = [f"- {s.name}: {s.price_eur:.2f}€" for s in SERVICES]
-        return reply("Precios:\n" + "\n".join(parts))
-
-    # 2) Horario
-    if "horario" in body:
-        return reply("Abrimos L–V 10:00–14:00 y 16:00–20:00; sábados 10:00–14:00. Domingos cerrado.")
-
-    # 3) Slots: 'slots corte 2025-09-10 [ana]'
-    m = re.match(r"^slots\s+(\w+)\s+(\d{4}-\d{2}-\d{2})(?:\s+(\w+))?$", body)
-    if m:
-        service_id, date_str, pro_opt = m.group(1), m.group(2), m.group(3)
-        if service_id not in SERVICE_BY_ID:
-            return reply("Servicio no válido. Usa: corte | tinte | barba.")
-        if pro_opt and pro_opt not in PRO_BY_ID:
-            return reply("Profesional no válido. Usa: ana | luis (o déjalo vacío).")
-        try:
-            d = datetime.strptime(date_str, "%Y-%m-%d").date()
-            # Validar rango: inicio del día
-            day_start = datetime.combine(d, time.min).replace(tzinfo=TZ)
-            validate_target_dt(day_start)
-        except ValueError:
-            return reply("Fecha inválida. Usa YYYY-MM-DD.")
-        except Exception as e:
-            return reply(str(e))
-
-        slots = find_available_slots(session, service_id, d, pro_opt)
-        if not slots:
-            return reply("No hay huecos ese día.")
-        hhmm = [dt.strftime("%H:%M") for dt in slots[:10]]
-        extra = f" con {PRO_BY_ID[pro_opt].name}" if pro_opt else ""
-        return reply(f"Huecos para {SERVICE_BY_ID[service_id].name}{extra} el {date_str}:\n" + ", ".join(hhmm))
-
-    # 4) Reservar: 'reservar corte 2025-09-10 17:00 [ana]'
-    m = re.match(r"^reserv(?:ar|a|o)?\s+(\w+)\s+(\d{4}-\d{2}-\d{2})\s+([0-2]\d:[0-5]\d)(?:\s+(\w+))?$", body)
-    if m:
-        service_id, date_str, time_str, pro_opt = m.group(1), m.group(2), m.group(3), m.group(4)
-        if service_id not in SERVICE_BY_ID:
-            return reply("Servicio no válido. Usa: corte | tinte | barba.")
-        if pro_opt and pro_opt not in PRO_BY_ID:
-            return reply("Profesional no válido. Usa: ana | luis (o déjalo vacío).")
-        try:
-            start = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
-            if start.tzinfo is None:
-                start = start.replace(tzinfo=TZ)
-            validate_target_dt(start)
-        except ValueError:
-            return reply("Fecha/hora inválidas. Usa 'reservar <servicio> YYYY-MM-DD HH:MM [prof]'.")
-        except Exception as e:
-            return reply(str(e))
-
-        # Elegir profesional si no vino
-        chosen_pro = pro_opt
-        if not chosen_pro:
-            for p in PROS:
-                if service_id not in p.services:
-                    continue
-                avail = find_available_slots(session, service_id, start.date(), p.id)
-                avail_naive = [_naive(dt) for dt in avail]
-                if _naive(start) in avail_naive:
-                    chosen_pro = p.id
-                    break
-        if not chosen_pro:
-            return reply("No hay profesionales libres a esa hora. Prueba 'slots <servicio> <fecha>' para ver opciones.")
-
-        # Validar disponibilidad exacta del inicio
-        avail = find_available_slots(session, service_id, start.date(), chosen_pro)
-        avail_naive = [_naive(dt) for dt in avail]
-        if _naive(start) not in avail_naive:
-            return reply("Ese inicio no está disponible. Usa 'slots <servicio> <fecha> [prof]' para ver huecos.")
-
-        service = SERVICE_BY_ID[service_id]
-        end = start + timedelta(minutes=service.duration_min)
-        res_id = str(uuid.uuid4())
-        cal_id = get_calendar_for_professional(chosen_pro)
-
-        # Calendar primero; si DB falla, rollback
-        gcal_id = None
-        try:
-            g = create_gcal_reservation(
-                reservation=type("R", (), dict(
-                    id=res_id, service_id=service_id, professional_id=chosen_pro, start=start, end=end
-                ))(),
-                calendar_id=cal_id
-            )
-            gcal_id = g.get("id")
-        except Exception as e:
-            return reply(f"Error al crear en Google Calendar: {e}")
-
-        try:
-            row = ReservationDB(
-                id=res_id,
-                service_id=service_id,
-                professional_id=chosen_pro,
-                start=start,
-                end=end,
-                google_event_id=gcal_id,
-                google_calendar_id=cal_id,
-            )
-            session.add(row)
-            session.commit()
-        except Exception as e:
-            try:
-                if gcal_id:
-                    delete_gcal_reservation(gcal_id, cal_id)
-            except Exception:
-                pass
-            return reply(f"No se pudo guardar la reserva: {e}")
-
-        nice = f"{service.name} con {PRO_BY_ID[chosen_pro].name} el {start.strftime('%Y-%m-%d %H:%M')}"
-        return reply(f"✅ Reserva confirmada: {nice}. ID: {res_id}")
-
-    # Fallback
-    help_txt = (
-        "No te he entendido. Prueba:\n"
-        "- precios\n"
-        "- horario\n"
-        "- slots corte 2025-09-10 [ana]\n"
-        "- reservar corte 2025-09-10 17:00 [ana]"
-    )
-    return reply(help_txt)

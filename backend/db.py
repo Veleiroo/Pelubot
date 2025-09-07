@@ -5,10 +5,16 @@ Incluye funciones para inicializar la base y obtener sesiones.
 """
 from __future__ import annotations
 import os
+from pathlib import Path
 from sqlmodel import SQLModel, create_engine, Session
 
 # Configuración de la base de datos
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./pelubot.db")
+# La ruta por defecto coloca el archivo en ``data/pelubot.db``
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_DB_PATH = BASE_DIR / "data" / "pelubot.db"
+DEFAULT_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
 
 # Para SQLite en FastAPI (múltiples hilos)
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}

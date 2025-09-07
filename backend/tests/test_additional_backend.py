@@ -1,5 +1,4 @@
 from datetime import date, timedelta
-import types
 
 API_KEY = "test-api-key"
 
@@ -106,22 +105,3 @@ def test_delete_cancel_and_double_cancel(app_client):
     assert r_del2.status_code == 404
 
 
-def test_webhook_horario_and_invalid_service_reply(app_client, monkeypatch):
-    # capturar mensajes de whatsapp
-    sent = []
-    import routes as routes
-
-    def fake_send(to: str, text: str):
-        sent.append((to, text))
-
-    monkeypatch.setattr(routes, "send_whatsapp_message", fake_send)
-
-    # horario
-    r = app_client.post("/whatsapp/webhook", data={"From": "whatsapp:+34123456789", "Body": "horario"})
-    assert r.status_code == 200
-    assert sent and "Abrimos" in sent[-1][1]
-
-    # servicio inválido
-    r2 = app_client.post("/whatsapp/webhook", data={"From": "whatsapp:+34123456789", "Body": "slots foo 2025-10-10"})
-    assert r2.status_code == 200
-    assert "Servicio no válido" in sent[-1][1]

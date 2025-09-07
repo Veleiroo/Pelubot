@@ -4,3 +4,6 @@ Thumbs.db
 .idea/
 .vscode/
 .env*
+*.db
+# Ignore local SQLite files
+backend/data/

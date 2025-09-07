@@ -15,9 +15,9 @@ def install_exception_handlers(app: FastAPI):
     """
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-        # Mantén el log que ya tenías
+        # Mantiene el log existente
         logger.warning("HTTPException %s: %s", exc.status_code, exc.detail)
-        # ⬇️ Formato que esperan los tests de FastAPI: clave 'detail'
+        # Formato que esperan los tests de FastAPI: clave 'detail'
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail},

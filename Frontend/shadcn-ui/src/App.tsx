@@ -2,15 +2,13 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Index from './pages/Index';
-import NotFound from './pages/NotFound';
-
-// nuevas páginas del flujo
-import BookService from './pages/book/Service';
-import BookDate from './pages/book/Date';
-import BookTime from './pages/book/Time';
-import BookDetails from './pages/book/Details';
-import BookConfirm from './pages/book/Confirm';
+import Index from '@/pages/Index';
+import NotFound from '@/pages/NotFound';
+import BookService from '@/pages/book/Service';
+import BookDate from '@/pages/book/Date';
+import BookTime from '@/pages/book/Time';
+import BookDetails from '@/pages/book/Details';
+import BookConfirm from '@/pages/book/Confirm';
 
 const queryClient = new QueryClient();
 
@@ -22,7 +20,7 @@ const App = () => (
                 <Routes>
                     <Route path="/" element={<Index />} />
 
-                    {/* flujo reservas */}
+                    {/* Flujo de reservas. */}
                     <Route path="/book/service" element={<BookService />} />
                     <Route path="/book/date" element={<BookDate />} />
                     <Route path="/book/time" element={<BookTime />} />

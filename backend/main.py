@@ -81,13 +81,6 @@ def create_app() -> FastAPI:
     # Montamos rutas principales
     app.include_router(router)
 
-    # (Opcional) Montar webhook de Telegram si el módulo existe
-    try:
-        from telegram_webhook import router as telegram_router  # si lo tienes
-        app.include_router(telegram_router)
-    except Exception:
-        pass
-
     return app
 
 
