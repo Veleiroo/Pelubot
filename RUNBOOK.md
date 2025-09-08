@@ -1,20 +1,26 @@
 # Runbook de Operaciones
 
 ## Fallo en Google Calendar
-1. Revisar logs de `google_calendar.py`.
-2. Reintentar la operación manualmente.
-3. Si persiste, registrar incidencia y crear la reserva a mano.
+1. Revisar logs del backend (`backend/server2.log`).
+2. Verificar credenciales (`GOOGLE_SERVICE_ACCOUNT_JSON` o `GOOGLE_OAUTH_JSON`).
+3. Probar `/ready` para ver detalle del error.
+4. Reintentar sincronización con `POST /admin/sync` (import|push).
 
 ## Huecos incoherentes
-1. Ejecutar `sync_from_gcal_range` para reconcilio.
-2. Comparar con agenda externa y corregir.
+1. Ejecutar `POST /admin/conflicts` para detectar discrepancias.
+2. Ejecutar `POST /admin/sync` en modo `both` para reconciliar.
+3. Si persisten, revisar eventos manualmente en GCal.
 
-## Restaurar copia de seguridad
+## Restaurar copia de seguridad (SQLite)
 1. Detener el servicio.
-2. Sustituir el archivo de BD por el backup.
+2. Sustituir el archivo de BD por el backup (`backend/app/data/*.db`).
 3. Reiniciar y verificar integridad.
 
 ## Webhooks de mensajería
 - Validar que los tokens y secretos están activos.
 - Revisar respuestas de la API externa ante fallos.
-
+## Utilidades Makefile
+- `make dev-start PORT=8776 FAKE=0` — arranca backend
+- `make dev-clear` — borra eventos de GCal (requiere API_KEY)
+- `make dev-demo` — flujo de demo end-to-end
+- `make conflicts` — detecta conflictos en un rango

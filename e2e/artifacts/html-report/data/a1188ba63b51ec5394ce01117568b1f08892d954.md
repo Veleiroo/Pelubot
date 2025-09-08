@@ -1,0 +1,43 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Debug Config" [level=3] [ref=e6]
+      - generic [ref=e7]:
+        - generic [ref=e8]: "BASE: /api"
+        - generic [ref=e9]: "VITE_API_KEY: 6b0d...9661"
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - heading "/health & /ready" [level=3] [ref=e13]
+        - generic [ref=e14]:
+          - generic [ref=e15]: "health: {\"ok\":true}"
+          - generic [ref=e16]: "ready: null"
+          - generic [ref=e17]:
+            - button "Ping /health" [ref=e18] [cursor=pointer]
+            - button "Ping /ready" [ref=e19] [cursor=pointer]
+      - generic [ref=e20]:
+        - heading "Catálogos" [level=3] [ref=e22]
+        - generic [ref=e23]:
+          - generic [ref=e24]: "services: []"
+          - generic [ref=e25]: "professionals: []"
+    - generic [ref=e26]:
+      - heading "Disponibilidad" [level=3] [ref=e28]
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: service_id
+            - textbox "corte" [ref=e33]
+          - generic [ref=e34]:
+            - generic [ref=e35]: professional_id
+            - textbox "(opcional)" [ref=e36]
+          - button "/slots/days" [ref=e37] [cursor=pointer]
+        - generic [ref=e38]: "days: []"
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - generic [ref=e41]: date (YYYY-MM-DD)
+            - textbox "2025-09-08" [active] [ref=e42]
+          - button "/slots" [ref=e43] [cursor=pointer]
+```

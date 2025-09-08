@@ -36,6 +36,20 @@ All shadcn/ui components have been downloaded under `@/components/ui`.
 
 - Import components from `@/components/ui` in your React components
 - Customize the UI by modifying the Tailwind configuration
+- Configura la base URL del backend creando un `.env` en `Frontend/shadcn-ui/` con:
+
+```
+VITE_API_BASE_URL=http://127.0.0.1:8776
+```
+
+El archivo `src/lib/api.ts` usa `VITE_API_BASE_URL` (fallback a `http://127.0.0.1:8776`).
+Si tu backend no permite llamadas sin API Key, añade también:
+
+```
+VITE_API_KEY=changeme
+```
+
+En desarrollo, alternativa: exporta `ALLOW_LOCAL_NO_AUTH=true` en el backend para no requerir API Key desde `localhost`.
 
 ## Note
 
@@ -55,7 +69,7 @@ pnpm i
 ```shell
 pnpm add some_new_dependency
 
-**Start Preview**
+**Start Dev**
 
 ```shell
 pnpm run dev

@@ -1,0 +1,25 @@
+# General
+.git
+.github
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+node_modules
+dist
+build
+
+# Python venvs
+.venv
+venv
+env
+
+# Editor
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Local databases (we mount volume for backend)
+backend/app/data/*.db
+

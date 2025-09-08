@@ -1,0 +1,31 @@
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Instalar pnpm
+RUN corepack enable && corepack prepare pnpm@8.10.0 --activate
+
+# Copiar archivos de proyecto
+COPY Frontend/shadcn-ui/package.json Frontend/shadcn-ui/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY Frontend/shadcn-ui/ ./
+
+# Base pública para API (proxy en nginx a /api), API key y flag de debug
+ARG API_BASE=/api
+ARG VITE_API_KEY
+ARG VITE_ENABLE_DEBUG=1
+ENV VITE_API_BASE_URL=${API_BASE}
+ENV VITE_API_KEY=${VITE_API_KEY}
+ENV VITE_ENABLE_DEBUG=${VITE_ENABLE_DEBUG}
+
+RUN pnpm build
+
+FROM nginx:alpine AS runtime
+
+# Config de Nginx con proxy /api -> backend:8776 y SPA fallback
+COPY Frontend/shadcn-ui/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 8080
+
+CMD ["nginx", "-g", "daemon off;"]

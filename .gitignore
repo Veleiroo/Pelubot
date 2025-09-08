@@ -33,10 +33,14 @@ logs/
 
 # Local databases
 backend/data/*.db
+backend/app/data/*.db
 
 # Google OAuth tokens and client secrets (use env vars in prod)
 backend/oauth_tokens.json
 backend/autorizacion.json
+
+# Dev runtime files
+backend/uvicorn*.pid
 
 # Test coverage
 .coverage

@@ -20,6 +20,15 @@
 - Sección Contacto
 - Footer
 
+## Integración con Backend (pendiente)
+- Usar `src/lib/api.ts` actualizado (contrato backend):
+  - `/services` para pintar servicios y duración/precio
+  - `/slots` con `{ service_id, date_str, professional_id? }` y mostrar `slots[]`
+  - `/reservations` con `{ service_id, professional_id, start }`
+- Añadir `.env` con `VITE_API_BASE_URL`
+- Manejar errores de API con toasts/estados vacíos
+- Añadir validaciones básicas en formularios (fecha/hora/profesional)
+
 ### 3. src/components/Navigation.tsx
 - Navbar responsive con logo
 - Links a secciones

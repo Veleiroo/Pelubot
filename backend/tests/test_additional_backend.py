@@ -18,7 +18,7 @@ def test_ready_ok_and_gcal_fail(app_client, monkeypatch):
     assert body["ok"] is True
 
     # simular fallo en cliente gcal
-    import google_calendar as gcal
+    import app.integrations.google_calendar as gcal
 
     def boom():
         raise RuntimeError("boom")
@@ -103,5 +103,4 @@ def test_delete_cancel_and_double_cancel(app_client):
     # segunda vez -> 404
     r_del2 = app_client.delete(f"/reservations/{res_id}", headers={"X-API-Key": API_KEY})
     assert r_del2.status_code == 404
-
 

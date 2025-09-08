@@ -1,0 +1,84 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: pelubot-backend
+    working_dir: /app/backend
+    env_file:
+      - .env
+    environment:
+      # Valores por defecto; pueden sobreescribirse en .env
+      TZ: ${TZ:-Europe/Madrid}
+      API_KEY: ${API_KEY:-changeme}
+      USE_GCAL_BUSY: ${USE_GCAL_BUSY:-true}
+      # Para desarrollo puedes forzar cliente de Google Calendar falso (sin llamadas externas)
+      PELUBOT_FAKE_GCAL: ${PELUBOT_FAKE_GCAL:-0}
+      # OAuth por defecto apunta a archivo dentro del contenedor
+      GOOGLE_OAUTH_JSON: ${GOOGLE_OAUTH_JSON:-/app/backend/oauth_tokens.json}
+      # Base de datos SQLite persistente
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/backend/data/pelubot.db}
+    volumes:
+      - backend_data:/app/backend/data
+      # Monta tus tokens OAuth (si existen) como solo lectura
+      - ./backend/oauth_tokens.json:/app/backend/oauth_tokens.json:ro
+    ports:
+      - "${BACKEND_PORT:-8776}:8776"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Frontend/shadcn-ui/Dockerfile
+      args:
+        # El frontend compila con base '/api' que nginx proxya al backend
+        API_BASE: ${FRONT_API_BASE:-/api}
+        # Inyecta API key en build para que la SPA autorice /reservations, etc.
+        # Se usa la misma API_KEY del backend; si necesitas otra, define FRONT_API_KEY y cambia aquí.
+        VITE_API_KEY: ${API_KEY}
+        # Habilita la ruta de debug y logs de red en la SPA (solo para desarrollo)
+        VITE_ENABLE_DEBUG: ${FRONT_ENABLE_DEBUG:-1}
+    container_name: pelubot-frontend
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+  e2e:
+    build:
+      context: .
+      dockerfile: e2e/Dockerfile
+    container_name: pelubot-e2e
+    depends_on:
+      - backend
+      - frontend
+    environment:
+      - BASE_URL=http://pelubot-frontend
+      - BACKEND_URL=http://pelubot-backend:8776
+    volumes:
+      - ./e2e/artifacts:/e2e/artifacts
+
+volumes:
+  backend_data:
+    name: pelubot_db
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
