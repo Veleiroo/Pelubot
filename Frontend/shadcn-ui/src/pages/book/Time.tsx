@@ -4,8 +4,11 @@ import { useBooking } from '@/store/booking';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { BookingSteps } from '@/components/BookingSteps';
 
 type Professional = { id: string; name: string; services?: string[] };
 
@@ -22,6 +25,7 @@ const BookTime = () => {
   const [slots, setSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useGcal, setUseGcal] = useState<boolean>(true);
 
   useEffect(() => {
     if (!serviceId || !date) return;
@@ -50,7 +54,7 @@ const BookTime = () => {
     setError(null);
     (async () => {
       try {
-        const out = await api.getSlots({ service_id: serviceId, date, professional_id: professionalId ?? undefined });
+        const out = await api.getSlots({ service_id: serviceId, date, professional_id: professionalId ?? undefined, use_gcal: useGcal });
         if (mounted) setSlots(out.slots);
       } catch (e: any) {
         const msg = e?.message || 'Error cargando horarios';
@@ -63,7 +67,7 @@ const BookTime = () => {
     return () => {
       mounted = false;
     };
-  }, [serviceId, date, professionalId]);
+  }, [serviceId, date, professionalId, useGcal]);
 
   if (!serviceId || !date) {
     navigate('/book/service');
@@ -77,6 +81,7 @@ const BookTime = () => {
 
   return (
     <div className="mx-auto max-w-2xl p-6 text-white space-y-4 border border-neutral-800 bg-neutral-900 rounded-md">
+      <BookingSteps steps={[{ key: 'service', label: 'Servicio', done: true }, { key: 'date', label: 'Fecha y hora', active: true }, { key: 'confirm', label: 'Confirmar' }]} />
       <div className="flex items-center gap-3">
         <span>Profesional:</span>
         <Select value={professionalId ?? ''} onValueChange={(v) => setProfessional(v || null)}>
@@ -92,6 +97,11 @@ const BookTime = () => {
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Switch id="use-gcal" checked={useGcal} onCheckedChange={setUseGcal} />
+        <Label htmlFor="use-gcal" className="text-sm text-neutral-300">Comprobar Google Calendar (evitar solapes externos)</Label>
       </div>
 
       {loading && (

@@ -5,6 +5,7 @@ import { useBooking } from '@/store/booking';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BookingSteps } from '@/components/BookingSteps';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Service = () => {
@@ -60,7 +61,9 @@ const Service = () => {
   };
 
   return (
-    <div className="mx-auto max-w-3xl p-6 grid gap-4 sm:grid-cols-2">
+    <div className="mx-auto max-w-3xl p-6">
+      <BookingSteps steps={[{ key: 'service', label: 'Servicio', active: true }, { key: 'date', label: 'Fecha y hora' }, { key: 'confirm', label: 'Confirmar' }]} />
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
       {services.map((s) => (
         <Card key={s.id} className="border-neutral-800 bg-neutral-900 text-white">
           <CardHeader>
@@ -75,6 +78,7 @@ const Service = () => {
           </CardContent>
         </Card>
       ))}
+      </div>
     </div>
   );
 };

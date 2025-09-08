@@ -4,9 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { es } from 'date-fns/locale';
+import { BookingSteps } from '@/components/BookingSteps';
 
 const toYmd = (d: Date) => {
   const y = d.getFullYear();
@@ -36,6 +39,7 @@ const BookDate = () => {
   const [loading, setLoading] = useState(false);
   const [pros, setPros] = useState<{ id: string; name: string; services?: string[] }[]>([]);
   const [slots, setSlots] = useState<string[]>([]);
+  const [useGcal, setUseGcal] = useState<boolean>(true);
   const [slotsLoading, setSlotsLoading] = useState(false);
 
   // Leer servicio de la URL (fallback por si el estado aún no está)
@@ -75,6 +79,7 @@ const BookDate = () => {
           start: toYmd(start),
           end: toYmd(end),
           professional_id: professionalId ?? undefined,
+          use_gcal: useGcal,
         });
         if (mounted) setAvail(new Set(out.available_days));
       } catch (e) {
@@ -88,7 +93,7 @@ const BookDate = () => {
     return () => {
       mounted = false;
     };
-  }, [serviceId, professionalId, month]);
+  }, [serviceId, professionalId, month, useGcal]);
 
   const today = useMemo(() => {
     const t = new Date();
@@ -127,6 +132,7 @@ const BookDate = () => {
           service_id: serviceId,
           date: toYmd(selected as Date),
           professional_id: professionalId ?? undefined,
+          use_gcal: useGcal,
         });
         if (mounted) setSlots(out.slots);
       } catch {
@@ -138,10 +144,11 @@ const BookDate = () => {
     return () => {
       mounted = false;
     };
-  }, [serviceId, professionalId, selectedValid]);
+  }, [serviceId, professionalId, selectedValid, useGcal]);
 
   return (
     <div className="mx-auto max-w-3xl p-6 text-white space-y-4">
+      <BookingSteps steps={[{ key: 'service', label: 'Servicio', done: true }, { key: 'date', label: 'Fecha y hora', active: true }, { key: 'confirm', label: 'Confirmar' }]} />
       <h2 className="text-xl">Selecciona fecha y hora</h2>
 
       <div className="flex items-center gap-3">
@@ -173,6 +180,10 @@ const BookDate = () => {
           modifiers={{ available: (day) => avail.has(toYmd(day as Date)) }}
           modifiersClassNames={{ available: 'text-green-300' }}
         />
+        <div className="mt-3 flex items-center gap-2">
+          <Switch id="use-gcal" checked={useGcal} onCheckedChange={setUseGcal} />
+          <Label htmlFor="use-gcal" className="text-sm text-neutral-300">Comprobar Google Calendar (evitar solapes externos)</Label>
+        </div>
         {loading && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
             <div className="text-sm text-neutral-200 bg-neutral-800 px-3 py-2 rounded">Comprobando disponibilidad…</div>

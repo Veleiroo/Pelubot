@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBooking } from '@/store/booking';
 import { api } from '@/lib/api';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const mask = (s?: string) => {
   if (!s) return 'none';
@@ -22,6 +24,7 @@ const Debug = () => {
   const [date, setDate] = useState<string>('');
   const [serviceId, setServiceId] = useState<string>('');
   const [professionalId, setProfessionalId] = useState<string>('');
+  const [useGcal, setUseGcal] = useState<boolean>(true);
   const { setService, setProfessional, setDate: setStoreDate, setSlot } = useBooking((s) => s);
 
   useEffect(() => {
@@ -39,12 +42,12 @@ const Debug = () => {
     if (!serviceId) return;
     const start = today.slice(0,7) + '-01';
     const end = new Date(new Date(start).getFullYear(), new Date(start).getMonth()+1, 0).toISOString().slice(0,10);
-    const out = await api.getDaysAvailability({ service_id: serviceId, start, end, professional_id: professionalId || undefined });
+    const out = await api.getDaysAvailability({ service_id: serviceId, start, end, professional_id: professionalId || undefined, use_gcal: useGcal });
     setDays(out.available_days);
   };
   const fetchSlots = async () => {
     if (!serviceId || !date) return;
-    const out = await api.getSlots({ service_id: serviceId, date, professional_id: professionalId || undefined });
+    const out = await api.getSlots({ service_id: serviceId, date, professional_id: professionalId || undefined, use_gcal: useGcal });
     setSlots(out.slots);
   };
   const gotoBook = (slot: string) => {
@@ -99,6 +102,10 @@ const Debug = () => {
               <div className="text-xs text-neutral-400">professional_id</div>
               <input className="bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm" value={professionalId} onChange={e=>setProfessionalId(e.target.value)} placeholder="(opcional)" />
             </div>
+            <div className="flex items-center gap-2 h-[32px]">
+              <Switch id="dbg-use-gcal" checked={useGcal} onCheckedChange={setUseGcal} />
+              <Label htmlFor="dbg-use-gcal" className="text-xs text-neutral-300">use_gcal</Label>
+            </div>
             <Button size="sm" onClick={fetchDays}>/slots/days</Button>
           </div>
           <div className="text-xs whitespace-pre-wrap">days: {JSON.stringify(days)}</div>
@@ -122,4 +129,3 @@ const Debug = () => {
 };
 
 export default Debug;
-

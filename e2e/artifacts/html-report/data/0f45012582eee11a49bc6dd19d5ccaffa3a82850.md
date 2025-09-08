@@ -33,11 +33,14 @@
           - generic [ref=e34]:
             - generic [ref=e35]: professional_id
             - textbox "(opcional)" [ref=e36]
-          - button "/slots/days" [ref=e37] [cursor=pointer]
-        - generic [ref=e38]: "days: []"
-        - generic [ref=e39]:
-          - generic [ref=e40]:
-            - generic [ref=e41]: date (YYYY-MM-DD)
-            - textbox "2025-09-08" [active] [ref=e42]
-          - button "/slots" [ref=e43] [cursor=pointer]
+          - generic [ref=e37]:
+            - switch "use_gcal" [checked] [ref=e38] [cursor=pointer]
+            - generic [ref=e39]: use_gcal
+          - button "/slots/days" [ref=e40] [cursor=pointer]
+        - generic [ref=e41]: "days: []"
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]: date (YYYY-MM-DD)
+            - textbox "2025-09-08" [active] [ref=e45]: 2025-09-09
+          - button "/slots" [ref=e46] [cursor=pointer]
 ```

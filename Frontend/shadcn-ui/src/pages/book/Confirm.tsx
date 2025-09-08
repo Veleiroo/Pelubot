@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from '@/components/ui/sonner';
+import { BookingSteps } from '@/components/BookingSteps';
 
 const BookConfirm = () => {
   const navigate = useNavigate();
@@ -61,6 +62,7 @@ const BookConfirm = () => {
 
   return (
     <div className="mx-auto max-w-xl p-6 text-white space-y-4 border border-neutral-800 bg-neutral-900 rounded-md">
+      <BookingSteps steps={[{ key: 'service', label: 'Servicio', done: true }, { key: 'date', label: 'Fecha y hora', done: true }, { key: 'confirm', label: 'Confirmar', active: true }]} />
       <h2 className="text-xl">Confirmar reserva</h2>
       <div className="text-sm text-neutral-300">
         <div>Servicio: {serviceId}</div>
