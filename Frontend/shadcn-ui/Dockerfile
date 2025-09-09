@@ -8,7 +8,18 @@ RUN corepack enable && corepack prepare pnpm@8.10.0 --activate
 # Copiar archivos de proyecto
 COPY Frontend/shadcn-ui/package.json Frontend/shadcn-ui/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
-COPY Frontend/shadcn-ui/ ./
+
+# Copiar código fuente (excluyendo node_modules)
+COPY Frontend/shadcn-ui/src ./src
+COPY Frontend/shadcn-ui/public ./public
+COPY Frontend/shadcn-ui/index.html ./
+COPY Frontend/shadcn-ui/vite.config.ts ./
+COPY Frontend/shadcn-ui/tsconfig.json ./
+COPY Frontend/shadcn-ui/tsconfig.app.json ./
+COPY Frontend/shadcn-ui/tsconfig.node.json ./
+COPY Frontend/shadcn-ui/tailwind.config.ts ./
+COPY Frontend/shadcn-ui/postcss.config.js ./
+COPY Frontend/shadcn-ui/components.json ./
 
 # Base pública para API (proxy en nginx a /api), API key y flag de debug
 ARG API_BASE=/api

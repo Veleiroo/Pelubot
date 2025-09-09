@@ -1,8 +1,9 @@
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8776";
 const API_KEY: string | undefined = import.meta.env.VITE_API_KEY;
-const DEBUG = String(import.meta.env.VITE_ENABLE_DEBUG ?? "0").toLowerCase() in ["1","true","yes","y"] as any ? true : (String(import.meta.env.VITE_ENABLE_DEBUG ?? "0").toLowerCase() === "1");
+const DEBUG = /^(1|true|yes|y)$/i.test(String(import.meta.env.VITE_ENABLE_DEBUG ?? "0"));
 
 export type Service = { id: string; name: string; duration_min: number; price_eur: number };
+export type Professional = { id: string; name: string; services?: string[] };
 
 type SlotsOut = { service_id: string; date: string; professional_id?: string | null; slots: string[] };
 type ActionResult = { ok: boolean; message: string };
@@ -38,6 +39,7 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   // Catalogos
   getServices: () => http<Service[]>("/services"),
+  getProfessionals: () => http<Professional[]>("/professionals"),
 
   // Slots: el backend espera { service_id, date_str, professional_id? }
   getSlots: (args: { service_id: string; date: string; professional_id?: string | null; use_gcal?: boolean }) =>

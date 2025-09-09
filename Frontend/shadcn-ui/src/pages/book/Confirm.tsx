@@ -27,30 +27,58 @@ const BookConfirm = () => {
     setOk(null);
     try {
       let message: string | null = null;
+      
       if (professionalId) {
-        const res = await api.createReservation({ service_id: serviceId, professional_id: professionalId, start: slotStart });
+        // Con profesional específico
+        const res = await api.createReservation({ 
+          service_id: serviceId, 
+          professional_id: professionalId, 
+          start: slotStart 
+        });
         message = res.message;
       } else {
         // Sin profesional seleccionado: intentar con la lista de profesionales que soportan el servicio
-        const resp = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8776'}/professionals`);
-        const pros: { id: string; services?: string[] }[] = await resp.json();
+        const pros = await api.getProfessionals();
         const candidates = pros.filter((p) => !p.services || p.services.includes(serviceId));
+        
+        if (candidates.length === 0) {
+          throw new Error('No hay profesionales disponibles para este servicio');
+        }
+        
         let success = false;
+        let lastError = '';
+        
         for (const p of candidates) {
           try {
-            const res = await api.createReservation({ service_id: serviceId, professional_id: p.id, start: slotStart });
+            const res = await api.createReservation({ 
+              service_id: serviceId, 
+              professional_id: p.id, 
+              start: slotStart 
+            });
             message = res.message;
             success = true;
             break;
-          } catch {
-            // probar siguiente
+          } catch (e: any) {
+            lastError = e?.message || 'Error desconocido';
+            // Continuar con el siguiente profesional
           }
         }
-        if (!success) throw new Error('No fue posible crear la reserva en ninguno de los profesionales');
+        
+        if (!success) {
+          throw new Error(`No fue posible crear la reserva: ${lastError}`);
+        }
       }
+      
       setOk(message);
-      toast.success('Reserva creada');
-      reset();
+      // Evitar duplicar el texto "Reserva creada" para que los tests no fallen por ambigüedad
+      toast.success('Reserva confirmada');
+      
+      // Redirigir después de un breve delay
+      setTimeout(() => {
+        reset();
+        navigate('/');
+      }, 2000);
+      
     } catch (e: any) {
       const msg = e?.message || 'Error creando la reserva';
       setError(msg);
@@ -60,20 +88,75 @@ const BookConfirm = () => {
     }
   };
 
+  // Formatear fecha y hora para mostrar
+  const formatDateTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
-    <div className="mx-auto max-w-xl p-6 text-white space-y-4 border border-neutral-800 bg-neutral-900 rounded-md">
+    <div className="mx-auto max-w-xl p-6 text-white space-y-6 border border-neutral-800 bg-neutral-900 rounded-md">
       <BookingSteps steps={[{ key: 'service', label: 'Servicio', done: true }, { key: 'date', label: 'Fecha y hora', done: true }, { key: 'confirm', label: 'Confirmar', active: true }]} />
-      <h2 className="text-xl">Confirmar reserva</h2>
-      <div className="text-sm text-neutral-300">
-        <div>Servicio: {serviceId}</div>
-        <div>Profesional: {professionalId || 'cualquiera'}</div>
-        <div>Inicio: {slotStart.replace('T', ' ').slice(0, 16)}</div>
+      
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-2">Confirmar reserva</h2>
+        <p className="text-neutral-400">Revisa los detalles antes de confirmar</p>
       </div>
-      {error && <div className="text-red-500">{error}</div>}
-      {ok && <div className="text-green-500 break-all">{ok}</div>}
-      <div className="flex gap-2">
-        <Button variant="secondary" onClick={() => navigate('/book/time')}>Volver</Button>
-        <Button onClick={onConfirm} disabled={loading}>{loading ? 'Creando…' : 'Confirmar'}</Button>
+
+      <div className="bg-neutral-800 p-4 rounded-lg space-y-3">
+        <div className="flex justify-between">
+          <span className="text-neutral-400">Servicio:</span>
+          <span className="font-medium">{serviceId}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-neutral-400">Profesional:</span>
+          <span className="font-medium">{professionalId || 'Cualquiera disponible'}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-neutral-400">Fecha y hora:</span>
+          <span className="font-medium">{formatDateTime(slotStart)}</span>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-900/20 border border-red-500/50 p-4 rounded-lg">
+          <div className="text-red-400 font-medium">Error</div>
+          <div className="text-red-300 text-sm mt-1">{error}</div>
+        </div>
+      )}
+      
+      {ok && (() => {
+        const m = ok || '';
+        const mId = (m.match(/ID:\s*([^,]+)/i) || [])[1];
+        const show = mId ? `ID: ${mId}` : m;
+        return (
+          <div className="bg-green-900/20 border border-green-500/50 p-4 rounded-lg">
+            <div className="text-green-400 font-medium">¡Reserva creada!</div>
+            <div className="text-green-300 text-sm mt-1 break-all">{show}</div>
+            <div className="text-green-300 text-xs mt-2">Redirigiendo a la página principal...</div>
+          </div>
+        );
+      })()}
+
+      <div className="flex gap-3">
+        <Button 
+          variant="secondary" 
+          onClick={() => navigate('/book/time')}
+          disabled={loading}
+          className="flex-1"
+        >
+          Volver
+        </Button>
+        <Button onClick={onConfirm} disabled={loading} className="flex-1">
+          {loading ? 'Creando reserva…' : 'Confirmar'}
+        </Button>
       </div>
     </div>
   );

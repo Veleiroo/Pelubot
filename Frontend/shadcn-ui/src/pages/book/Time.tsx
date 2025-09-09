@@ -32,8 +32,7 @@ const BookTime = () => {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8776'}/professionals`);
-        const json: Professional[] = await res.json();
+        const json = await api.getProfessionals();
         const filtered = serviceId ? json.filter((p) => !p.services || p.services.includes(serviceId)) : json;
         if (mounted) setPros(filtered);
       } catch (e: any) {

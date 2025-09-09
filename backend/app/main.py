@@ -1,5 +1,6 @@
 """
-App entrypoint for PeluBot backend (FastAPI). Structured package version.
+Punto de entrada del backend de PeluBot (FastAPI).
+Incluye configuración de CORS, logging, middleware y ciclo de vida.
 """
 import os
 from contextlib import asynccontextmanager

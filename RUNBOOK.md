@@ -24,3 +24,9 @@
 - `make dev-clear` — borra eventos de GCal (requiere API_KEY)
 - `make dev-demo` — flujo de demo end-to-end
 - `make conflicts` — detecta conflictos en un rango
+
+## Frontend (desarrollo)
+- Variables en `Frontend/shadcn-ui/.env`:
+  - `VITE_API_BASE_URL=http://127.0.0.1:8776` (o `/api` si usas nginx)
+  - `VITE_API_KEY` debe coincidir con `API_KEY` del backend, salvo que `ALLOW_LOCAL_NO_AUTH=true` en `backend/.env`.
+- Arranca: `make dev-start` y en otra terminal `make front-dev`.

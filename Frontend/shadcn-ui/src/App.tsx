@@ -5,11 +5,12 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
-import BookService from '@/pages/book/Service';
+const BookService = lazy(() => import('@/pages/book/Service'));
 import BookDate from '@/pages/book/Date';
-import BookTime from '@/pages/book/Time';
-import BookDetails from '@/pages/book/Details';
-import BookConfirm from '@/pages/book/Confirm';
+const BookTime = lazy(() => import('@/pages/book/Time'));
+const BookDetails = lazy(() => import('@/pages/book/Details'));
+const BookConfirm = lazy(() => import('@/pages/book/Confirm'));
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 const DEBUG = String(import.meta.env.VITE_ENABLE_DEBUG ?? '0') === '1' || String(import.meta.env.VITE_ENABLE_DEBUG ?? '').toLowerCase() === 'true';
 const DebugPage = lazy(() => import('./pages/Debug'));
 
@@ -20,15 +21,16 @@ const App = () => (
         <TooltipProvider>
             <Toaster />
             <BrowserRouter>
+                <ErrorBoundary>
                 <Routes>
                     <Route path="/" element={<Index />} />
 
                     {/* Flujo de reservas. */}
-                    <Route path="/book/service" element={<BookService />} />
+                    <Route path="/book/service" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando servicios…</div>}><BookService /></Suspense>} />
                     <Route path="/book/date" element={<BookDate />} />
-                    <Route path="/book/time" element={<BookTime />} />
-                    <Route path="/book/details" element={<BookDetails />} />
-                    <Route path="/book/confirm" element={<BookConfirm />} />
+                    <Route path="/book/time" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando horarios…</div>}><BookTime /></Suspense>} />
+                    <Route path="/book/details" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando…</div>}><BookDetails /></Suspense>} />
+                    <Route path="/book/confirm" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando confirmación…</div>}><BookConfirm /></Suspense>} />
                     <Route
                         path="/debug"
                         element={
@@ -40,6 +42,7 @@ const App = () => (
 
                     <Route path="*" element={<NotFound />} />
                 </Routes>
+                </ErrorBoundary>
             </BrowserRouter>
         </TooltipProvider>
     </QueryClientProvider>

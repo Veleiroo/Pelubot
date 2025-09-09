@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBooking } from '@/store/booking';
@@ -14,6 +15,7 @@ const mask = (s?: string) => {
 
 const Debug = () => {
   const BASE = (import.meta as any).env.VITE_API_BASE_URL || 'http://127.0.0.1:8776';
+  const navigate = useNavigate();
   const KEY = (import.meta as any).env.VITE_API_KEY as string | undefined;
   const [health, setHealth] = useState<any>(null);
   const [ready, setReady] = useState<any>(null);
@@ -32,7 +34,7 @@ const Debug = () => {
       try { setHealth(await fetch(BASE + '/health').then(r => r.json())); } catch {}
       try { setReady(await fetch(BASE + '/ready').then(r => r.json())); } catch {}
       try { setServices(await api.getServices()); } catch {}
-      try { const res = await fetch(BASE + '/professionals'); setPros(await res.json()); } catch {}
+      try { setPros(await api.getProfessionals()); } catch {}
     })();
   }, [BASE]);
 
@@ -55,13 +57,13 @@ const Debug = () => {
     setProfessional(professionalId || null);
     setStoreDate(date);
     setSlot(slot);
-    window.location.href = '/book/confirm?service=' + encodeURIComponent(serviceId);
+    navigate('/book/confirm?service=' + encodeURIComponent(serviceId));
   };
 
   return (
     <div className="mx-auto max-w-5xl p-6 space-y-6">
       <Card className="border-neutral-800 bg-neutral-900 text-white">
-        <CardHeader><CardTitle>Debug Config</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Configuración de Debug</CardTitle></CardHeader>
         <CardContent className="text-sm text-neutral-300 space-y-1">
           <div>BASE: {BASE}</div>
           <div>VITE_API_KEY: {mask(KEY)}</div>
@@ -106,7 +108,7 @@ const Debug = () => {
               <Switch id="dbg-use-gcal" checked={useGcal} onCheckedChange={setUseGcal} />
               <Label htmlFor="dbg-use-gcal" className="text-xs text-neutral-300">use_gcal</Label>
             </div>
-            <Button size="sm" onClick={fetchDays}>/slots/days</Button>
+            <Button size="sm" onClick={fetchDays}>/days</Button>
           </div>
           <div className="text-xs whitespace-pre-wrap">days: {JSON.stringify(days)}</div>
 

@@ -1,7 +1,9 @@
 import { Scissors, Zap, Sparkles, Crown, Brush, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 export default function ServicesSection() {
+  const navigate = useNavigate();
   const services = [
     {
       icon: <Scissors className="text-[#00D4AA]" size={32} />,
@@ -48,7 +50,7 @@ export default function ServicesSection() {
   ];
 
   const handleReservation = () => {
-    window.open('https://wa.me/1234567890?text=Hola, me gustaría reservar una cita en Deinis Barber Club', '_blank');
+    navigate('/book/service');
   };
 
   return (
