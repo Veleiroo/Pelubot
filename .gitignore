@@ -51,4 +51,18 @@ dist/
 build/
 *.egg-info/
 
-# Note: .env is NOT ignored - it contains auth credentials needed for the app
+# Environment files (use secrets/CI vars instead of committing)
+.env
+backend/.env
+Frontend/shadcn-ui/.env
+
+# Frontend build and deps
+Frontend/shadcn-ui/node_modules/
+Frontend/shadcn-ui/dist/
+Frontend/shadcn-ui/build/
+
+# E2E artifacts
+e2e/artifacts/
+e2e/artifacts-out/
+e2e/test-results/
+e2e/playwright-report/
