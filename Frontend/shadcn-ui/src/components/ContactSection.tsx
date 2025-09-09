@@ -1,9 +1,11 @@
 import { MapPin, Phone, Clock, Mail, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 export default function ContactSection() {
+  const navigate = useNavigate();
   const handleWhatsApp = () => {
-    window.open('https://wa.me/1234567890?text=Hola, me gustaría reservar una cita en Deinis Barber Club', '_blank');
+    navigate('/book/service');
   };
 
   const handleCall = () => {

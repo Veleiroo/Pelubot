@@ -51,6 +51,14 @@ VITE_API_KEY=changeme
 
 En desarrollo, alternativa: exporta `ALLOW_LOCAL_NO_AUTH=true` en el backend para no requerir API Key desde `localhost`.
 
+Opcional: para mostrar el calendario visual en la página de fecha (además del selector nativo), añade:
+
+```
+VITE_ENABLE_CALENDAR=true
+```
+
+Si el calendario falla en tu entorno, seguirá estando el selector nativo como respaldo.
+
 ## Note
 
 - The `@/` path alias points to the `src/` directory

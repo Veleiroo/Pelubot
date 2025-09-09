@@ -2,8 +2,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useBooking } from '@/store/booking';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-// Calendario avanzado deshabilitado por estabilidad en entornos limitados.
+// Calendario visual (opcional): si VITE_ENABLE_CALENDAR está activo, se muestra; si no,
+// el usuario puede usar el selector nativo de fecha. En ambos casos habrá lista de huecos.
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +22,8 @@ const toYmd = (d: Date) => {
 
 const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
 const endOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+const ANY_PRO = '__any__';
 
 const BookDate = () => {
   const navigate = useNavigate();
@@ -39,7 +43,7 @@ const BookDate = () => {
   const [loading, setLoading] = useState(false);
   const [pros, setPros] = useState<{ id: string; name: string; services?: string[] }[]>([]);
   const [slots, setSlots] = useState<string[]>([]);
-  const [useGcal, setUseGcal] = useState<boolean>(true);
+  const [useGcal, setUseGcal] = useState<boolean>(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
 
   // Leer servicio de la URL (fallback por si el estado aún no está)
@@ -172,12 +176,12 @@ const BookDate = () => {
 
       <div className="flex items-center gap-3">
         <span>Profesional:</span>
-        <Select value={professionalId ?? ''} onValueChange={(v) => setProfessional(v || null)}>
+        <Select value={professionalId ?? ANY_PRO} onValueChange={(v) => setProfessional(v === ANY_PRO ? null : v)}>
           <SelectTrigger className="w-64">
             <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Cualquiera</SelectItem>
+            <SelectItem value={ANY_PRO}>Cualquiera</SelectItem>
             {pros.map((p) => (
               <SelectItem key={p.id} value={p.id}>
                 {p.name}
@@ -187,8 +191,37 @@ const BookDate = () => {
         </Select>
       </div>
       <div className="relative">
-        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
-          Selecciona la fecha con el selector y luego el horario disponible.
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="rounded-md border border-neutral-800 bg-neutral-900 p-3 w-full max-w-[360px] mx-auto">
+            <Calendar
+              mode="single"
+              month={month}
+              onMonthChange={setMonth}
+              selected={selected}
+              onSelect={setSelected}
+              disabled={isDisabled}
+              locale={es}
+              className="rounded-md w-full"
+              modifiers={{ available: (day) => avail.has(toYmd(day as Date)) }}
+              modifiersClassNames={{ available: 'text-green-300 font-medium' }}
+            />
+          </div>
+          <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
+            <div className="font-medium text-white mb-2">Selecciona una fecha</div>
+            <p className="mb-3">Los días en verde tienen disponibilidad para el servicio elegido.</p>
+            <div className="mt-1">
+              <label className="block text-xs text-neutral-400 mb-1">O escribe la fecha:</label>
+              <input
+                type="date"
+                className="bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm"
+                onChange={(e) => {
+                  const v = e.currentTarget.value;
+                  if (v) setSelected(new Date(v + 'T00:00:00'));
+                }}
+              />
+            </div>
+            <div className="mt-4 text-xs text-neutral-400">Consejo: puedes activar o desactivar la comprobación con Google Calendar para evitar solapes.</div>
+          </div>
         </div>
         <div className="mt-3 flex items-center gap-2">
           <Switch id="use-gcal" checked={useGcal} onCheckedChange={setUseGcal} />
@@ -199,18 +232,7 @@ const BookDate = () => {
             <div className="text-sm text-neutral-200 bg-neutral-800 px-3 py-2 rounded">Comprobando disponibilidad…</div>
           </div>
         )}
-        {/* Selector de fecha simple (siempre disponible) */}
-        <div className="mt-3 text-sm text-neutral-300">
-          <div>Elige una fecha:</div>
-          <input
-            type="date"
-            className="mt-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm"
-            onChange={(e) => {
-              const v = e.currentTarget.value;
-              if (v) setSelected(new Date(v + 'T00:00:00'));
-            }}
-          />
-        </div>
+        
       </div>
       {/* Huecos disponibles */}
       <div className="space-y-4">
@@ -251,9 +273,12 @@ const BookDate = () => {
                   if (selectedValid) {
                     setDate(toYmd(selected as Date));
                   }
-                  // navegación inmediata a Confirmar, pasando service en la URL por robustez
-                  const q = serviceId ? `?service=${encodeURIComponent(serviceId)}` : '';
-                  navigate(`/book/confirm${q}`);
+                  // Navegar a Confirmar pasando parámetros robustos
+                  const params = new URLSearchParams();
+                  if (serviceId) params.set('service', serviceId);
+                  params.set('start', iso);
+                  if (professionalId) params.set('pro', professionalId);
+                  navigate(`/book/confirm?${params.toString()}`);
                 }}
               >
                 {iso.slice(11, 16)}

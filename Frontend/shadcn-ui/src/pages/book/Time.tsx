@@ -79,16 +79,16 @@ const BookTime = () => {
   };
 
   return (
-    <div className="mx-auto max-w-2xl p-6 text-white space-y-4 border border-neutral-800 bg-neutral-900 rounded-md">
+    <div className="mx-auto max-w-3xl p-6 text-white space-y-4 border border-neutral-800 bg-neutral-900 rounded-md">
       <BookingSteps steps={[{ key: 'service', label: 'Servicio', done: true }, { key: 'date', label: 'Fecha y hora', active: true }, { key: 'confirm', label: 'Confirmar' }]} />
       <div className="flex items-center gap-3">
         <span>Profesional:</span>
-        <Select value={professionalId ?? ''} onValueChange={(v) => setProfessional(v || null)}>
+        <Select value={professionalId ?? ANY_PRO} onValueChange={(v) => setProfessional(v === ANY_PRO ? null : v)}>
           <SelectTrigger className="w-64">
             <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Cualquiera</SelectItem>
+            <SelectItem value={ANY_PRO}>Cualquiera</SelectItem>
             {pros.map((p) => (
               <SelectItem key={p.id} value={p.id}>
                 {p.name}
@@ -113,11 +113,11 @@ const BookTime = () => {
       {loading && <div className="text-sm text-neutral-400">Comprobando disponibilidad…</div>}
       {error && <div className="text-red-500">{error}</div>}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {slots.map((iso) => {
           const time = iso.slice(11, 16); // HH:MM
           return (
-            <Button key={iso} variant="secondary" onClick={() => onConfirm(iso)}>
+            <Button key={iso} variant="secondary" className="h-12 rounded-lg border-neutral-700 hover:bg-neutral-800" onClick={() => onConfirm(iso)}>
               {time}
             </Button>
           );
@@ -129,3 +129,4 @@ const BookTime = () => {
 };
 
 export default BookTime;
+const ANY_PRO = '__any__';

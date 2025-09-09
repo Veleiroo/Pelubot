@@ -26,7 +26,7 @@ const Debug = () => {
   const [date, setDate] = useState<string>('');
   const [serviceId, setServiceId] = useState<string>('');
   const [professionalId, setProfessionalId] = useState<string>('');
-  const [useGcal, setUseGcal] = useState<boolean>(true);
+  const [useGcal, setUseGcal] = useState<boolean>(false);
   const { setService, setProfessional, setDate: setStoreDate, setSlot } = useBooking((s) => s);
 
   useEffect(() => {

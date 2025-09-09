@@ -34,12 +34,24 @@ test('flow via /debug to confirm reservation', async ({ page, baseURL, request }
 
   // 1) Go to debug page
   await page.goto(baseURL + '/debug');
-  // Wait a bit for lazy route content
-  await expect(page.getByText('Debug Config')).toBeVisible({ timeout: 15000 });
+  // Wait a bit for lazy route content (ES/EN)
+  const h1es = page.getByText('Configuración de Debug');
+  const h1en = page.getByText('Debug Config');
+  await Promise.race([
+    h1es.waitFor({ state: 'visible', timeout: 15000 }),
+    h1en.waitFor({ state: 'visible', timeout: 15000 }),
+  ]);
 
   // 2) Set service and fetch slots for discovered day
   await page.getByPlaceholder('corte').fill(serviceId);
   await page.locator('input[placeholder*="-"]').first().fill(day);
+  // Ensure use_gcal is off to avoid external dependencies
+  try {
+    const gcalSwitch = page.locator('#dbg-use-gcal');
+    if (await gcalSwitch.isVisible({ timeout: 2000 })) {
+      if (await gcalSwitch.isChecked()) await gcalSwitch.click();
+    }
+  } catch {}
   await page.getByRole('button', { name: '/slots' }).click();
 
   // Wait for at least one slot button
@@ -57,6 +69,6 @@ test('flow via /debug to confirm reservation', async ({ page, baseURL, request }
   const confirmBtn = page.getByRole('button', { name: 'Confirmar' });
   await confirmBtn.click();
 
-  // 6) Expect success toast or message
-  await expect(page.getByText(/Reserva creada/i)).toBeVisible({ timeout: 15000 });
+  // 6) Expect success message
+  await expect(page.getByText('¡Reserva creada!')).toBeVisible({ timeout: 15000 });
 });

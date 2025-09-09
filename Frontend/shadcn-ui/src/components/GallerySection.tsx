@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function GallerySection() {
+  const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
 
   const galleryImages = [
@@ -59,7 +61,7 @@ export default function GallerySection() {
   };
 
   const handleReservation = () => {
-    window.open('https://wa.me/1234567890?text=Hola, me gustaría reservar una cita en Deinis Barber Club', '_blank');
+    navigate('/book/service');
   };
 
   return (
