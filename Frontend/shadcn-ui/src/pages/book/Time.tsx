@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookingSteps } from '@/components/BookingSteps';
+import BookingLayout from '@/components/BookingLayout';
 
 type Professional = { id: string; name: string; services?: string[] };
 
@@ -35,8 +35,8 @@ const BookTime = () => {
         const json = await api.getProfessionals();
         const filtered = serviceId ? json.filter((p) => !p.services || p.services.includes(serviceId)) : json;
         if (mounted) setPros(filtered);
-      } catch (e: any) {
-        const msg = e?.message || 'Error cargando profesionales';
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Error cargando profesionales';
         setError(msg);
         toast.error(msg);
       }
@@ -55,8 +55,8 @@ const BookTime = () => {
       try {
         const out = await api.getSlots({ service_id: serviceId, date, professional_id: professionalId ?? undefined, use_gcal: useGcal });
         if (mounted) setSlots(out.slots);
-      } catch (e: any) {
-        const msg = e?.message || 'Error cargando horarios';
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Error cargando horarios';
         setError(msg);
         toast.error(msg);
       } finally {
@@ -78,9 +78,15 @@ const BookTime = () => {
     navigate('/book/confirm');
   };
 
+  const steps = [
+    { key: 'service', label: 'Servicio', done: true },
+    { key: 'date', label: 'Fecha y hora', active: true },
+    { key: 'confirm', label: 'Confirmar' },
+  ];
+
   return (
-    <div className="mx-auto max-w-3xl p-6 text-white space-y-4 border border-neutral-800 bg-neutral-900 rounded-md">
-      <BookingSteps steps={[{ key: 'service', label: 'Servicio', done: true }, { key: 'date', label: 'Fecha y hora', active: true }, { key: 'confirm', label: 'Confirmar' }]} />
+    <BookingLayout steps={steps} title="Selecciona hora" subtitle="Elige el horario que prefieras">
+      <div className="border border-neutral-800 bg-neutral-900 rounded-md p-6 space-y-4">
       <div className="flex items-center gap-3">
         <span>Profesional:</span>
         <Select value={professionalId ?? ANY_PRO} onValueChange={(v) => setProfessional(v === ANY_PRO ? null : v)}>
@@ -124,7 +130,8 @@ const BookTime = () => {
         })}
         {!loading && slots.length === 0 && <div>No hay horarios disponibles.</div>}
       </div>
-    </div>
+      </div>
+    </BookingLayout>
   );
 };
 
