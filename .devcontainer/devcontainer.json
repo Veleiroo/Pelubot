@@ -1,0 +1,32 @@
+{
+  "name": "Pelubot Codespace (Node 20 + Python 3.12)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" }
+  },
+  "forwardPorts": [8000, 5173],
+  "portsAttributes": {
+    "8000": { "label": "FastAPI (backend)", "onAutoForward": "notify" },
+    "5173": { "label": "Vite (frontend)", "onAutoForward": "notify" }
+  },
+  "remoteEnv": {
+    "VITE_API_BASE_URL": "http://localhost:8000"
+  },
+  "postCreateCommand": "set -e\npython -m pip install --upgrade pip\npython -m pip install -r backend/requirements.txt\ncd Frontend/shadcn-ui && npm ci\n",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}
+
