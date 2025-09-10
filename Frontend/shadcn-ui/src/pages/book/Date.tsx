@@ -118,6 +118,13 @@ const BookDate = () => {
     return t;
   }, []);
 
+  // límite: hoy + 6 meses
+  const maxDate = useMemo(() => {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() + 6);
+    return d;
+  }, [today]);
+
   const isDisabled = (d: Date) => {
     const nd = new Date(d);
     nd.setHours(0, 0, 0, 0);
@@ -221,6 +228,9 @@ const BookDate = () => {
               onSelect={setSelected}
               disabled={isDisabled}
               locale={es}
+              captionLayout="dropdown-buttons"
+              fromDate={today}
+              toDate={maxDate}
               className="rounded-md"
               modifiers={{ available: (day) => avail.has(toYmd(day as Date)) }}
               modifiersClassNames={{ available: 'text-green-300 font-medium' }}
