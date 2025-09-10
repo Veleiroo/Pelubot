@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBooking } from '@/store/booking';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 // Calendario visual (opcional): si VITE_ENABLE_CALENDAR está activo, se muestra; si no,
 // el usuario puede usar el selector nativo de fecha. En ambos casos habrá lista de huecos.
@@ -45,6 +45,10 @@ const BookDate = () => {
   const [slots, setSlots] = useState<string[]>([]);
   const [useGcal, setUseGcal] = useState<boolean>(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const daysAbort = useRef<AbortController | null>(null);
+  const slotsAbort = useRef<AbortController | null>(null);
+  const daysTimer = useRef<any>(null);
+  const slotsTimer = useRef<any>(null);
 
   // Leer servicio de la URL (fallback por si el estado aún no está)
   useEffect(() => {
@@ -77,23 +81,29 @@ const BookDate = () => {
       }
     };
     const fetchAvail = async (m: Date) => {
+      if (daysTimer.current) clearTimeout(daysTimer.current);
+      if (daysAbort.current) daysAbort.current.abort();
       setLoading(true);
-      try {
-        const start = startOfMonth(m);
-        const end = endOfMonth(m);
-        const out = await api.getDaysAvailability({
-          service_id: serviceId,
-          start: toYmd(start),
-          end: toYmd(end),
-          professional_id: professionalId ?? undefined,
-          use_gcal: useGcal,
-        });
-        if (mounted) setAvail(new Set(out.available_days));
-      } catch (e) {
-        if (mounted) setAvail(new Set());
-      } finally {
-        if (mounted) setLoading(false);
-      }
+      const ctrl = new AbortController();
+      daysAbort.current = ctrl;
+      daysTimer.current = setTimeout(async () => {
+        try {
+          const start = startOfMonth(m);
+          const end = endOfMonth(m);
+          const out = await api.getDaysAvailability({
+            service_id: serviceId,
+            start: toYmd(start),
+            end: toYmd(end),
+            professional_id: professionalId ?? undefined,
+            use_gcal: useGcal,
+          }, { signal: ctrl.signal });
+          if (mounted) setAvail(new Set(out.available_days));
+        } catch (e) {
+          if (mounted) setAvail(new Set());
+        } finally {
+          if (mounted) setLoading(false);
+        }
+      }, 200);
     };
     fetchPros();
     fetchAvail(month);
@@ -132,24 +142,31 @@ const BookDate = () => {
     }
     setDate(toYmd(selected as Date));
     setSlotsLoading(true);
+    if (slotsTimer.current) clearTimeout(slotsTimer.current);
+    if (slotsAbort.current) slotsAbort.current.abort();
+    const ctrl = new AbortController();
+    slotsAbort.current = ctrl;
     let mounted = true;
-    (async () => {
-      try {
-        const out = await api.getSlots({
-          service_id: serviceId,
-          date: toYmd(selected as Date),
-          professional_id: professionalId ?? undefined,
-          use_gcal: useGcal,
-        });
-        if (mounted) setSlots(out.slots);
-      } catch {
-        if (mounted) setSlots([]);
-      } finally {
-        if (mounted) setSlotsLoading(false);
-      }
-    })();
+    slotsTimer.current = setTimeout(() => {
+      (async () => {
+        try {
+          const out = await api.getSlots({
+            service_id: serviceId,
+            date: toYmd(selected as Date),
+            professional_id: professionalId ?? undefined,
+            use_gcal: useGcal,
+          }, { signal: ctrl.signal });
+          if (mounted) setSlots(out.slots);
+        } catch {
+          if (mounted) setSlots([]);
+        } finally {
+          if (mounted) setSlotsLoading(false);
+        }
+      })();
+    }, 200);
     return () => {
       mounted = false;
+      ctrl.abort();
     };
   }, [serviceId, professionalId, selectedValid, useGcal]);
 
@@ -191,8 +208,8 @@ const BookDate = () => {
         </Select>
       </div>
       <div className="relative">
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="rounded-md border border-neutral-800 bg-neutral-900 p-3 w-full max-w-[360px] mx-auto">
+        <div className="flex flex-col items-center gap-3">
+          <div className="rounded-md border border-neutral-800 bg-neutral-900 p-3 w-full max-w-[360px]">
             <Calendar
               mode="single"
               month={month}
@@ -201,32 +218,16 @@ const BookDate = () => {
               onSelect={setSelected}
               disabled={isDisabled}
               locale={es}
-              className="rounded-md w-full"
+              className="rounded-md"
               modifiers={{ available: (day) => avail.has(toYmd(day as Date)) }}
               modifiersClassNames={{ available: 'text-green-300 font-medium' }}
             />
           </div>
-          <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
-            <div className="font-medium text-white mb-2">Selecciona una fecha</div>
-            <p className="mb-3">Los días en verde tienen disponibilidad para el servicio elegido.</p>
-            <div className="mt-1">
-              <label className="block text-xs text-neutral-400 mb-1">O escribe la fecha:</label>
-              <input
-                type="date"
-                className="bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm"
-                onChange={(e) => {
-                  const v = e.currentTarget.value;
-                  if (v) setSelected(new Date(v + 'T00:00:00'));
-                }}
-              />
-            </div>
-            <div className="mt-4 text-xs text-neutral-400">Consejo: puedes activar o desactivar la comprobación con Google Calendar para evitar solapes.</div>
+          <div className="text-xs text-neutral-400">
+            Días en verde = hay disponibilidad para el servicio elegido.
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <Switch id="use-gcal" checked={useGcal} onCheckedChange={setUseGcal} />
-          <Label htmlFor="use-gcal" className="text-sm text-neutral-300">Comprobar Google Calendar (evitar solapes externos)</Label>
-        </div>
+        {/* Toggle avanzado de GCal oculto en interfaz pública. Si quieres mostrarlo, quita este bloque. */}
         {loading && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
             <div className="text-sm text-neutral-200 bg-neutral-800 px-3 py-2 rounded">Comprobando disponibilidad…</div>

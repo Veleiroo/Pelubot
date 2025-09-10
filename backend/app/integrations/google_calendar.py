@@ -96,14 +96,16 @@ class _FakeFreebusy:
         self._body = body
         return self
     def execute(self):
-        cal_id = None
+        calendars = {}
         try:
             items = (self._body or {}).get("items", [])
             if items:
-                cal_id = items[0].get("id")
+                for it in items:
+                    cal_id = it.get("id") or "primary"
+                    calendars[cal_id] = {"busy": []}
         except Exception:
-            pass
-        return {"calendars": {cal_id or "primary": {"busy": []}}}
+            calendars["primary"] = {"busy": []}
+        return {"calendars": calendars}
 
 class _FakeEventsOp:
     def __init__(self, result):
@@ -172,6 +174,20 @@ def freebusy(service: Any, calendar_id: str, time_min_iso: str, time_max_iso: st
         return cals.get(calendar_id, {}).get("busy", [])
     except Exception as e:
         raise RuntimeError(f"Error consultando freebusy: {e}")
+
+def freebusy_multi(service: Any, calendar_ids: list[str], time_min_iso: str, time_max_iso: str, tz: str = "Europe/Madrid") -> Dict[str, List[Dict[str, str]]]:
+    """Consulta freebusy para varios calendarios en una sola llamada. Devuelve map cal_id -> busy[]."""
+    items = [{"id": cid} for cid in calendar_ids]
+    body = {"timeMin": iso_datetime(time_min_iso, tz), "timeMax": iso_datetime(time_max_iso, tz), "timeZone": tz, "items": items}
+    try:
+        fb = service.freebusy().query(body=body).execute()
+        cals = fb.get("calendars", {})
+        out: Dict[str, List[Dict[str, str]]] = {}
+        for cid in calendar_ids:
+            out[cid] = cals.get(cid, {}).get("busy", [])
+        return out
+    except Exception as e:
+        raise RuntimeError(f"Error consultando freebusy (multi): {e}")
 
 def list_calendars(service: Any) -> List[Dict[str, Any]]:
     try:
@@ -263,4 +279,3 @@ def clear_calendar(service: Any, calendar_id: str, time_min: Optional[str] = Non
                 continue
         deleted += 1
     return {"total_listed": len(items), "deleted": deleted, "skipped": skipped}
-

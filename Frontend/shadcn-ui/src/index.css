@@ -99,3 +99,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Calendario: ocultar días fuera del mes y marcar navegación deshabilitada */
+.pelu-cal .rdp-outside,
+.pelu-cal [data-outside="true"] {
+  display: none !important;
+}
+.pelu-cal .rdp-nav_button[disabled] {
+  opacity: .35;
+  cursor: not-allowed;
+}

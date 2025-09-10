@@ -5,7 +5,7 @@ import os
 from sqlmodel import Session, select
 from app.models import Service, RescheduleIn, Reservation, ReservationDB
 from app.data import SERVICE_BY_ID, PROS, PRO_BY_ID, WEEKLY_SCHEDULE, PRO_CALENDAR, PRO_USE_GCAL_BUSY
-from app.integrations.google_calendar import build_calendar, freebusy, create_event, patch_event, delete_event, iso_datetime, list_events_range
+from app.integrations.google_calendar import build_calendar, freebusy, freebusy_multi, create_event, patch_event, delete_event, iso_datetime, list_events_range
 from zoneinfo import ZoneInfo
 from datetime import timezone as _utc_tz
 
@@ -102,21 +102,27 @@ def find_available_slots(session: Session, service_id: str, on_date: date, profe
         if svc:
             day_start = datetime.combine(on_date, time(0, 0))
             day_end = datetime.combine(on_date, time(23, 59))
-            for pid in pros_needing_gcal:
+            # Consulta freebusy en una sola llamada para todos los calendarios implicados
+            cal_map: dict[str, str] = {pid: get_calendar_for_professional(pid) for pid in pros_needing_gcal}
+            cal_ids = list({cid for cid in cal_map.values() if cid})
+            try:
+                busy_map = freebusy_multi(svc, cal_ids, iso_datetime(day_start), iso_datetime(day_end)) if cal_ids else {}
+            except Exception:
+                busy_map = {}
+            for pid, cid in cal_map.items():
                 try:
-                    cal_id = get_calendar_for_professional(pid)
-                    busy = freebusy(svc, cal_id, iso_datetime(day_start), iso_datetime(day_end))
-                    intervals: List[Tuple[datetime, datetime]] = []
-                    for b in busy:
-                        try:
-                            bs = _to_naive_local(datetime.fromisoformat(b["start"].replace("Z", "+00:00")))
-                            be = _to_naive_local(datetime.fromisoformat(b["end"].replace("Z", "+00:00")))
-                            intervals.append((bs, be))
-                        except Exception:
-                            continue
-                    gcal_busy_map[pid] = intervals
+                    entries = busy_map.get(cid, [])
                 except Exception:
-                    gcal_busy_map[pid] = []
+                    entries = []
+                intervals: List[Tuple[datetime, datetime]] = []
+                for b in entries:
+                    try:
+                        bs = _to_naive_local(datetime.fromisoformat((b.get("start") or "").replace("Z", "+00:00")))
+                        be = _to_naive_local(datetime.fromisoformat((b.get("end") or "").replace("Z", "+00:00")))
+                        intervals.append((bs, be))
+                    except Exception:
+                        continue
+                gcal_busy_map[pid] = intervals
 
     def overlaps_local(pro_id: str, start_dt: datetime, end_dt: datetime) -> bool:
         for r in _reservations_for_prof_on_date(session, pro_id, start_dt.date()):
@@ -429,4 +435,3 @@ def detect_conflicts_range(session: Session, start_date: date, end_date: date, b
                         break
         d += timedelta(days=1)
     return summary
-

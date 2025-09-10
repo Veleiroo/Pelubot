@@ -82,7 +82,7 @@ smoke: dev-start dev-ready
 	@echo "Running smoke flow (create -> reschedule -> cancel -> sync)..."
 	BASE=$(BASE) API_KEY=$(API_KEY) python backend/scripts/smoke_flow.py
 
-	sync-import:
+sync-import:
 		@echo "Sync import $(or $(START),today) .. $(or $(END),+$(or $(DAYS),7)d)"
 		BASE=$(BASE) API_KEY=$(API_KEY) python - << 'PY'
 	import os,json
@@ -99,7 +99,7 @@ smoke: dev-start dev-ready
 	    print(r.read().decode())
 	PY
 
-	sync-push:
+sync-push:
 		@echo "Sync push $(or $(START),today) .. $(or $(END),+$(or $(DAYS),7)d)"
 		BASE=$(BASE) API_KEY=$(API_KEY) python - << 'PY'
 	import os,json
@@ -116,7 +116,7 @@ smoke: dev-start dev-ready
 	    print(r.read().decode())
 	PY
 
-	conflicts:
+conflicts:
 		@echo "Conflicts for range"
 		BASE=$(BASE) API_KEY=$(API_KEY) python - << 'PY'
 	import os,json

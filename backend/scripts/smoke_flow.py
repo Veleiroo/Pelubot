@@ -77,13 +77,16 @@ def main() -> None:
         headers={"X-API-Key": API_KEY},
     )
     out["rescheduled"] = rescheduled
-    cancelled = _post(
-        "/reservations/" + res_id,
-        None,
-        headers={"X-API-Key": API_KEY, "X-HTTP-Method-Override": "DELETE"},
-    )
-    # If method override not supported, call cancel endpoint
-    if not cancelled.get("ok"):
+    # Cancel: intenta override y si no, usa endpoint explícito
+    try:
+        cancelled = _post(
+            "/reservations/" + res_id,
+            None,
+            headers={"X-API-Key": API_KEY, "X-HTTP-Method-Override": "DELETE"},
+        )
+    except Exception:
+        cancelled = {"ok": False}
+    if not (isinstance(cancelled, dict) and cancelled.get("ok")):
         cancelled = _post(
             "/cancel_reservation",
             {"reservation_id": res_id},
@@ -107,4 +110,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
