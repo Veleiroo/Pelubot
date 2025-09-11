@@ -8,7 +8,7 @@ import { buttonVariants } from '@/components/ui/button';
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
-function Calendar({ className, classNames, showOutsideDays = false, locale, ...props }: CalendarProps) {
+function Calendar({ className, classNames, showOutsideDays = true, locale, ...props }: CalendarProps) {
   // Usar español con lunes como primer día
   const loc = React.useMemo(() => {
     const base: any = locale ?? esLocale;
@@ -36,9 +36,12 @@ function Calendar({ className, classNames, showOutsideDays = false, locale, ...p
         months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
         month: 'space-y-3',
         caption: 'flex justify-center pt-1 relative items-center',
-        caption_label: 'text-sm font-medium',
+        caption_label: 'text-sm font-medium text-neutral-100',
         nav: 'space-x-1 flex items-center',
-        nav_button: cn(buttonVariants({ variant: 'outline' }), 'h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100'),
+        nav_button: cn(
+          buttonVariants({ variant: 'ghost' }),
+          'h-7 w-7 p-0 text-neutral-100 hover:bg-neutral-800 hover:text-white'
+        ),
         nav_button_previous: 'absolute left-1',
         nav_button_next: 'absolute right-1',
         table: 'w-full border-collapse table-fixed',
