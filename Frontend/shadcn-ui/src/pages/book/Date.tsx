@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { es } from 'date-fns/locale';
-import { BookingSteps } from '@/components/BookingSteps';
+import BookingLayout from '@/components/BookingLayout';
 
 const toYmd = (d: Date) => {
   const y = d.getFullYear();
@@ -47,8 +47,8 @@ const BookDate = () => {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const daysAbort = useRef<AbortController | null>(null);
   const slotsAbort = useRef<AbortController | null>(null);
-  const daysTimer = useRef<any>(null);
-  const slotsTimer = useRef<any>(null);
+  const daysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const slotsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Leer servicio de la URL (fallback por si el estado aún no está)
   useEffect(() => {
@@ -98,7 +98,7 @@ const BookDate = () => {
             use_gcal: useGcal,
           }, { signal: ctrl.signal });
           if (mounted) setAvail(new Set(out.available_days));
-        } catch (e) {
+        } catch (e: unknown) {
           if (mounted) setAvail(new Set());
         } finally {
           if (mounted) setLoading(false);
@@ -117,6 +117,13 @@ const BookDate = () => {
     t.setHours(0, 0, 0, 0);
     return t;
   }, []);
+
+  // límite: hoy + 6 meses
+  const maxDate = useMemo(() => {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() + 6);
+    return d;
+  }, [today]);
 
   const isDisabled = (d: Date) => {
     const nd = new Date(d);
@@ -170,27 +177,30 @@ const BookDate = () => {
     };
   }, [serviceId, professionalId, selectedValid, useGcal]);
 
+  const steps = [
+    { key: 'service', label: 'Servicio', done: true },
+    { key: 'date', label: 'Fecha y hora', active: true },
+    { key: 'confirm', label: 'Confirmar' },
+  ];
+
   // Fallback mínimo por si algo falla antes de montar el calendario
   if (!serviceId && !new URLSearchParams(location.search).get('service')) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white">
-        <div>
-          <div className="text-xl mb-2">Selecciona un servicio para continuar</div>
+      <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige un servicio para continuar">
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-xl">Necesitas seleccionar un servicio</div>
           <Button onClick={() => navigate('/book/service')}>Ir a servicios</Button>
         </div>
-      </div>
+      </BookingLayout>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-6 text-white space-y-6">
-      <BookingSteps steps={[{ key: 'service', label: 'Servicio', done: true }, { key: 'date', label: 'Fecha y hora', active: true }, { key: 'confirm', label: 'Confirmar' }]} />
-      
-      <div className="text-center">
-        <h1 className="text-3xl font-bold mb-2">Selecciona fecha y hora</h1>
-        <p className="text-neutral-400">Elige cuándo quieres tu cita</p>
-      </div>
-
+    <BookingLayout
+      steps={steps}
+      title="Selecciona fecha y hora"
+      subtitle="Elige cuándo quieres tu cita"
+    >
       <div className="flex items-center gap-3">
         <span>Profesional:</span>
         <Select value={professionalId ?? ANY_PRO} onValueChange={(v) => setProfessional(v === ANY_PRO ? null : v)}>
@@ -218,6 +228,9 @@ const BookDate = () => {
               onSelect={setSelected}
               disabled={isDisabled}
               locale={es}
+              captionLayout="dropdown-buttons"
+              fromDate={today}
+              toDate={maxDate}
               className="rounded-md"
               modifiers={{ available: (day) => avail.has(toYmd(day as Date)) }}
               modifiersClassNames={{ available: 'text-green-300 font-medium' }}
@@ -300,7 +313,7 @@ const BookDate = () => {
           Continuar
         </Button>
       </div>
-    </div>
+    </BookingLayout>
   );
 };
 

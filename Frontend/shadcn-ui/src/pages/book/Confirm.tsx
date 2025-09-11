@@ -4,7 +4,7 @@ import { useBooking } from '@/store/booking';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { toast } from '@/components/ui/sonner';
-import { BookingSteps } from '@/components/BookingSteps';
+import BookingLayout from '@/components/BookingLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { fmtEuro, fmtDateLong, fmtTime } from '@/lib/format';
 import { CheckCircle2 } from 'lucide-react';
@@ -12,7 +12,7 @@ import { CheckCircle2 } from 'lucide-react';
 const BookConfirm = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { serviceId, professionalId, slotStart, reset, setService, setProfessional, setSlot } = useBooking() as any;
+  const { serviceId, professionalId, slotStart, reset, setService, setProfessional, setSlot } = useBooking();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -29,7 +29,6 @@ const BookConfirm = () => {
   const service = useMemo(() => services.find(s => s.id === serviceId), [services, serviceId]);
   const professional = useMemo(() => pros.find(p => p.id === professionalId), [pros, professionalId]);
 
-  // Si llega con parámetros en la URL (service/start/pro), sembrar el store
   useEffect(() => {
     if (serviceId && slotStart) return;
     const p = new URLSearchParams(location.search);
@@ -47,60 +46,45 @@ const BookConfirm = () => {
     setOk(null);
     try {
       let message: string | null = null;
-      
+
       if (professionalId) {
-        // Con profesional específico
-        const res = await api.createReservation({ 
-          service_id: serviceId, 
-          professional_id: professionalId, 
-          start: slotStart 
+        const res = await api.createReservation({
+          service_id: serviceId,
+          professional_id: professionalId,
+          start: slotStart,
         });
         message = res.message;
       } else {
-        // Sin profesional seleccionado: intentar con la lista de profesionales que soportan el servicio
         const pros = await api.getProfessionals();
         const candidates = pros.filter((p) => !p.services || p.services.includes(serviceId));
-        
-        if (candidates.length === 0) {
-          throw new Error('No hay profesionales disponibles para este servicio');
-        }
-        
+        if (candidates.length === 0) throw new Error('No hay profesionales disponibles para este servicio');
         let success = false;
         let lastError = '';
-        
         for (const p of candidates) {
           try {
-            const res = await api.createReservation({ 
-              service_id: serviceId, 
-              professional_id: p.id, 
-              start: slotStart 
+            const res = await api.createReservation({
+              service_id: serviceId,
+              professional_id: p.id,
+              start: slotStart,
             });
             message = res.message;
             success = true;
             break;
-          } catch (e: any) {
-            lastError = e?.message || 'Error desconocido';
-            // Continuar con el siguiente profesional
+          } catch (e: unknown) {
+            lastError = e instanceof Error ? e.message : 'Error desconocido';
           }
         }
-        
-        if (!success) {
-          throw new Error(`No fue posible crear la reserva: ${lastError}`);
-        }
+        if (!success) throw new Error(`No fue posible crear la reserva: ${lastError}`);
       }
-      
+
       setOk(message);
-      // Evitar duplicar el texto "Reserva creada" para que los tests no fallen por ambigüedad
       toast.success('Reserva confirmada');
-      
-      // Redirigir después de un breve delay
       setTimeout(() => {
         reset();
         navigate('/');
       }, 2000);
-      
-    } catch (e: any) {
-      const msg = e?.message || 'Error creando la reserva';
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error creando la reserva';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -110,25 +94,23 @@ const BookConfirm = () => {
 
   const formatDateTime = (isoString: string) => `${fmtDateLong(isoString)}, ${fmtTime(isoString)}h`;
 
+  const steps = [
+    { key: 'service', label: 'Servicio', done: !!serviceId },
+    { key: 'date', label: 'Fecha y hora', done: !!slotStart },
+    { key: 'confirm', label: 'Confirmar', active: true },
+  ];
+
   if (!serviceId || !slotStart) {
     return (
-      <div className="mx-auto max-w-xl p-6 text-white space-y-4">
-        <BookingSteps steps={[{ key: 'service', label: 'Servicio', done: !!serviceId }, { key: 'date', label: 'Fecha y hora', done: false }, { key: 'confirm', label: 'Confirmar', active: true }]} />
+      <BookingLayout steps={steps} title="Confirmar reserva" subtitle="Revisa los detalles antes de confirmar">
         <div className="text-neutral-300">Cargando datos de tu reserva…</div>
         <Button variant="secondary" onClick={() => navigate('/book/service')}>Ir a seleccionar servicio</Button>
-      </div>
+      </BookingLayout>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6 text-white space-y-6">
-      <BookingSteps steps={[{ key: 'service', label: 'Servicio', done: true }, { key: 'date', label: 'Fecha y hora', done: true }, { key: 'confirm', label: 'Confirmar', active: true }]} />
-
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Confirmar reserva</h2>
-        <p className="text-neutral-400">Revisa los detalles antes de confirmar</p>
-      </div>
-
+    <BookingLayout steps={steps} title="Confirmar reserva" subtitle="Revisa los detalles antes de confirmar">
       <Card className="border-neutral-800 bg-neutral-900">
         <CardHeader className="pb-2">
           <CardTitle className="text-white">Resumen</CardTitle>
@@ -176,7 +158,7 @@ const BookConfirm = () => {
           {loading ? 'Creando reserva…' : 'Confirmar'}
         </Button>
       </div>
-    </div>
+    </BookingLayout>
   );
 };
 

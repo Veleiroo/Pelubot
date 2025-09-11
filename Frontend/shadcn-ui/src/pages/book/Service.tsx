@@ -5,8 +5,8 @@ import { useBooking } from '@/store/booking';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookingSteps } from '@/components/BookingSteps';
 import { Skeleton } from '@/components/ui/skeleton';
+import BookingLayout from '@/components/BookingLayout';
 
 const Service = () => {
   const navigate = useNavigate();
@@ -21,8 +21,8 @@ const Service = () => {
       try {
         const items = await api.getServices();
         if (mounted) setServices(items);
-      } catch (e: any) {
-        const msg = e?.message || 'Error cargando servicios';
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Error cargando servicios';
         setError(msg);
         toast.error(msg);
       } finally {
@@ -34,25 +34,39 @@ const Service = () => {
     };
   }, []);
 
+  const steps = [
+    { key: 'service', label: 'Servicio', active: true },
+    { key: 'date', label: 'Fecha y hora' },
+    { key: 'confirm', label: 'Confirmar' },
+  ];
+
   if (loading)
     return (
-      <div className="mx-auto max-w-3xl p-6 grid gap-4 sm:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="border-neutral-800 bg-neutral-900">
-            <CardHeader>
-              <Skeleton className="h-6 w-40" />
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div className="space-y-2 w-full">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="border-neutral-800 bg-neutral-900">
+              <CardHeader>
+                <Skeleton className="h-6 w-40" />
+              </CardHeader>
+              <CardContent className="flex items-center justify-between">
+                <div className="space-y-2 w-full">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </BookingLayout>
     );
-  if (error) return <div className="p-6 text-red-500">{error}</div>;
+
+  if (error)
+    return (
+      <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
+        <div className="text-red-500">{error}</div>
+      </BookingLayout>
+    );
 
   const onSelect = (id: string) => {
     setService(id);
@@ -61,14 +75,7 @@ const Service = () => {
   };
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
-      <BookingSteps steps={[{ key: 'service', label: 'Servicio', active: true }, { key: 'date', label: 'Fecha y hora' }, { key: 'confirm', label: 'Confirmar' }]} />
-      
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Selecciona un servicio</h1>
-        <p className="text-neutral-400">Elige el servicio que deseas reservar</p>
-      </div>
-
+    <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {services.map((s) => (
           <Card key={s.id} className="border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800 transition-colors">
@@ -86,18 +93,14 @@ const Service = () => {
                   <span>Precio: {s.price_eur} €</span>
                 </div>
               </div>
-              <Button 
-                onClick={() => onSelect(s.id)} 
-                className="w-full"
-                size="lg"
-              >
+              <Button onClick={() => onSelect(s.id)} className="w-full" size="lg">
                 Seleccionar
               </Button>
             </CardContent>
           </Card>
         ))}
       </div>
-    </div>
+    </BookingLayout>
   );
 };
 

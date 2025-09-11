@@ -1,13 +1,13 @@
 import { cn } from '@/lib/utils';
 
-type Step = {
+export type BookingStep = {
   key: string;
   label: string;
   active?: boolean;
   done?: boolean;
 };
 
-export function BookingSteps({ steps }: { steps: Step[] }) {
+export function BookingSteps({ steps }: { steps: BookingStep[] }) {
   return (
     <div className="flex items-center gap-3 text-sm mb-2">
       {steps.map((s, i) => (
