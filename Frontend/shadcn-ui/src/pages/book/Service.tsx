@@ -8,6 +8,9 @@ import { BookingSection } from '@/components/book/BookingSection';
 import { ServiceCard } from '@/components/book/ServiceCard';
 import { Scissors, Palette, Sparkles, LucideIcon, Crown, Zap } from 'lucide-react';
 import { BookingSteps } from '@/components/BookingSteps';
+import { BookingLayout } from '@/components/BookingLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const Service = () => {
   const navigate = useNavigate();
@@ -30,9 +33,7 @@ const Service = () => {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   if (loading)
@@ -73,10 +74,10 @@ const Service = () => {
       </>
     );
 
-  const onSelect = (id: string) => {
-    setService(id);
-    // Pasamos el servicio en la URL para evitar cualquier condición de carrera del store
-    navigate(`/book/date?service=${encodeURIComponent(id)}`);
+  const onSelect = (svc: Svc) => {
+    setService(svc.id, svc.name);
+    // Pasamos el servicio en la URL para evitar cualquier condición de carrera del store.
+    navigate(`/book/date?service=${encodeURIComponent(svc.id)}`);
   };
 
   const iconMap: Record<string, LucideIcon> = {
@@ -85,6 +86,12 @@ const Service = () => {
     barba: Sparkles,
     premium: Crown,
   };
+
+  const steps = [
+    { key: 'service', label: 'Servicio', active: true },
+    { key: 'date', label: 'Fecha y hora' },
+    { key: 'confirm', label: 'Confirmar' },
+  ];
 
   return (
     <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
@@ -106,7 +113,7 @@ const Service = () => {
                 </div>
               </div>
               <Button
-                onClick={() => onSelect(s.id)}
+                onClick={() => onSelect(s)}
                 className="w-full"
                 size="lg"
                 aria-label={`Seleccionar servicio ${s.name}`}

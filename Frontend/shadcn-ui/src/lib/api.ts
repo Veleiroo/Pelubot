@@ -17,35 +17,37 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string> ?? {}),
   };
   if (API_KEY) headers["X-API-Key"] = API_KEY;
+
   const url = `${BASE}${path}`;
   const started = performance.now();
+
   if (DEBUG) {
     console.debug('HTTP', init?.method || 'GET', url, init?.body ? JSON.parse(String(init.body)) : undefined);
   }
+
   // Timeout de seguridad de 12s
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 12_000);
+
   try {
     const res = await fetch(url, { headers, signal: ctrl.signal, ...init });
     const ms = Math.round(performance.now() - started);
+
     if (!res.ok) {
       let text = '';
       try {
         text = await res.text();
-      } catch {
-        /* noop */
-      }
+      } catch { /* noop */ }
+
       const rid = res.headers.get('X-Request-ID') || '';
       const msg = `HTTP ${res.status}${rid ? ` [rid=${rid}]` : ''}${text ? `: ${text.slice(0, 200)}` : ''}`;
-      if (DEBUG) {
-        console.warn('HTTP ERR', res.status, url, `${ms}ms`, msg);
-      }
+
+      if (DEBUG) console.warn('HTTP ERR', res.status, url, `${ms}ms`, msg);
       throw new Error(msg);
     }
+
     const data = (await res.json()) as T;
-    if (DEBUG) {
-      console.debug('HTTP OK', res.status, url, `${ms}ms`, data);
-    }
+    if (DEBUG) console.debug('HTTP OK', 200, url, `${ms}ms`, data);
     return data;
   } finally {
     clearTimeout(timer);
@@ -53,12 +55,15 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // Catalogos
+  // Catálogos.
   getServices: () => http<Service[]>("/services"),
   getProfessionals: () => http<Professional[]>("/professionals"),
 
-  // Slots: el backend espera { service_id, date_str, professional_id? }
-  getSlots: (args: { service_id: string; date: string; professional_id?: string | null; use_gcal?: boolean }, opts?: { signal?: AbortSignal }) =>
+  // Slots. El backend espera { service_id, date_str, professional_id? }.
+  getSlots: (
+    args: { service_id: string; date: string; professional_id?: string | null; use_gcal?: boolean },
+    opts?: { signal?: AbortSignal }
+  ) =>
     http<SlotsOut>("/slots", {
       method: "POST",
       body: JSON.stringify({
@@ -70,12 +75,15 @@ export const api = {
       signal: opts?.signal,
     }),
 
-  // Crear reserva: el backend espera { service_id, professional_id, start }
+  // Creación de reservas. El backend espera { service_id, professional_id, start }.
   createReservation: (payload: { service_id: string; professional_id: string; start: string }) =>
     http<ActionResult>("/reservations", { method: "POST", body: JSON.stringify(payload) }),
 
-  // Disponibilidad por días para un rango [start, end]
-  getDaysAvailability: (args: { service_id: string; start: string; end: string; professional_id?: string | null; use_gcal?: boolean }, opts?: { signal?: AbortSignal }) =>
+  // Disponibilidad por días para un rango [start, end].
+  getDaysAvailability: (
+    args: { service_id: string; start: string; end: string; professional_id?: string | null; use_gcal?: boolean },
+    opts?: { signal?: AbortSignal }
+  ) =>
     http<DaysAvailabilityOut>("/slots/days", {
       method: "POST",
       body: JSON.stringify({

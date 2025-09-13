@@ -10,13 +10,13 @@ import { buttonVariants } from '@/components/ui/button';
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
 function Calendar({ className, classNames, showOutsideDays = true, locale, ...props }: CalendarProps) {
-  // Usar español con lunes como primer día
+  // Usar español con lunes como primer día.
   const loc = React.useMemo(() => {
     const base: Locale = locale ?? esLocale;
     return { ...base, options: { ...(base.options || {}), weekStartsOn: 1 } } as Locale;
   }, [locale]);
 
-  // Límite de navegación: hoy .. hoy + 183 días (≈6 meses)
+  // Límite de navegación: hoy .. hoy + 183 días (≈6 meses).
   const today = React.useMemo(() => new Date(), []);
   const toMonthDefault = React.useMemo(() => {
     const d = new Date();
@@ -50,7 +50,7 @@ function Calendar({ className, classNames, showOutsideDays = true, locale, ...pr
         head_cell: 'text-muted-foreground h-8 text-[0.72rem] uppercase tracking-wide text-center',
         row: '',
         cell: 'p-0 text-center align-middle',
-        // Celda ligera + botón de día centrado para no romper columnas
+        // Celda ligera y botón de día centrado para no romper columnas.
         day: 'p-0 text-center align-middle',
         day_button: cn(buttonVariants({ variant: 'ghost' }), 'h-9 w-9 p-0 font-normal aria-selected:opacity-100 inline-flex items-center justify-center mx-auto'),
         day_range_end: 'day-range-end',
