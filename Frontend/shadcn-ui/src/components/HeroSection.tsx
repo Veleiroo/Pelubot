@@ -31,16 +31,16 @@ export default function HeroSection() {
             {/* Content */}
             <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
                 <div className="flex items-center justify-center mb-6">
-                    <Scissors className="text-[#00D4AA] mr-3" size={48} />
+                    <Scissors className="text-brand mr-3" size={48} />
                     <div className="flex">
                         {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="text-[#00D4AA] fill-current" size={24} />
+                            <Star key={i} className="text-brand fill-current" size={24} />
                         ))}
                     </div>
                 </div>
 
                 <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-                    <span className="text-[#00D4AA]">DEINIS</span>
+                    <span className="text-brand">DEINIS</span>
                     <br />
                     BARBER CLUB
                 </h1>
@@ -54,7 +54,7 @@ export default function HeroSection() {
                     <Button
                         onClick={handleReservation}
                         size="lg"
-                        className="bg-[#00D4AA] hover:bg-[#00B894] text-black font-bold text-lg px-8 py-4 transition-all duration-300 transform hover:scale-105"
+                        className="bg-brand hover:bg-[#00B894] text-black font-bold text-lg px-8 py-4 transition-all duration-300 transform hover:scale-105"
                     >
                         RESERVA TU CITA
                     </Button>
@@ -62,7 +62,7 @@ export default function HeroSection() {
                         onClick={scrollToContact}
                         variant="outline"
                         size="lg"
-                        className="border-[#00D4AA] text-[#00D4AA] hover:bg-[#00D4AA] hover:text-black font-bold text-lg px-8 py-4 transition-all duration-300"
+                        className="border-brand text-brand hover:bg-brand hover:text-black font-bold text-lg px-8 py-4 transition-all duration-300"
                     >
                         VER HORARIOS
                     </Button>
@@ -70,17 +70,17 @@ export default function HeroSection() {
 
                 {/* Floating Elements */}
                 <div className="absolute top-20 left-10 animate-pulse">
-                    <div className="w-2 h-2 bg-[#00D4AA] rounded-full"></div>
+                    <div className="w-2 h-2 bg-brand rounded-full"></div>
                 </div>
                 <div className="absolute bottom-20 right-10 animate-pulse delay-1000">
-                    <div className="w-3 h-3 bg-[#00D4AA] rounded-full"></div>
+                    <div className="w-3 h-3 bg-brand rounded-full"></div>
                 </div>
             </div>
 
             {/* Scroll Indicator */}
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-                <div className="w-6 h-10 border-2 border-[#00D4AA] rounded-full flex justify-center">
-                    <div className="w-1 h-3 bg-[#00D4AA] rounded-full mt-2 animate-pulse"></div>
+                <div className="w-6 h-10 border-2 border-brand rounded-full flex justify-center">
+                    <div className="w-1 h-3 bg-brand rounded-full mt-2 animate-pulse"></div>
                 </div>
             </div>
         </section>

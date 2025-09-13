@@ -15,7 +15,7 @@ export default function AboutSection() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
             </div>
-            <div className="absolute -bottom-6 -right-6 bg-[#00D4AA] text-black p-6 rounded-lg font-bold text-lg">
+            <div className="absolute -bottom-6 -right-6 bg-brand text-black p-6 rounded-lg font-bold text-lg">
               +5 Años de Experiencia
             </div>
           </div>
@@ -24,7 +24,7 @@ export default function AboutSection() {
           <div className="space-y-8">
             <div>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                Sobre <span className="text-[#00D4AA]">Nosotros</span>
+                Sobre <span className="text-brand">Nosotros</span>
               </h2>
               <p className="text-gray-300 text-lg leading-relaxed mb-6">
                 En Deinis Barber Club, combinamos la tradición de la barbería clásica con el estilo urbano contemporáneo. 
@@ -39,22 +39,22 @@ export default function AboutSection() {
             {/* Stats */}
             <div className="grid grid-cols-2 gap-6">
               <div className="text-center p-6 bg-black/50 rounded-lg border border-gray-800">
-                <Users className="text-[#00D4AA] mx-auto mb-3" size={32} />
+                <Users className="text-brand mx-auto mb-3" size={32} />
                 <div className="text-3xl font-bold text-white mb-1">500+</div>
                 <div className="text-gray-400">Clientes Satisfechos</div>
               </div>
               <div className="text-center p-6 bg-black/50 rounded-lg border border-gray-800">
-                <Award className="text-[#00D4AA] mx-auto mb-3" size={32} />
+                <Award className="text-brand mx-auto mb-3" size={32} />
                 <div className="text-3xl font-bold text-white mb-1">5★</div>
                 <div className="text-gray-400">Calificación Promedio</div>
               </div>
               <div className="text-center p-6 bg-black/50 rounded-lg border border-gray-800">
-                <Clock className="text-[#00D4AA] mx-auto mb-3" size={32} />
+                <Clock className="text-brand mx-auto mb-3" size={32} />
                 <div className="text-3xl font-bold text-white mb-1">7</div>
                 <div className="text-gray-400">Días a la Semana</div>
               </div>
               <div className="text-center p-6 bg-black/50 rounded-lg border border-gray-800">
-                <Scissors className="text-[#00D4AA] mx-auto mb-3" size={32} />
+                <Scissors className="text-brand mx-auto mb-3" size={32} />
                 <div className="text-3xl font-bold text-white mb-1">100%</div>
                 <div className="text-gray-400">Profesional</div>
               </div>

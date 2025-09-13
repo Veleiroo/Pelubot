@@ -1,0 +1,15 @@
+@keyframes cal-fade-keyframes {
+  from {
+    opacity: 0.7;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cal-fade {
+  animation: cal-fade-keyframes 0.12s ease both;
+}
+

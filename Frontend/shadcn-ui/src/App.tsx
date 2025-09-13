@@ -7,7 +7,6 @@ import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
 const BookService = lazy(() => import('@/pages/book/Service'));
 import BookDate from '@/pages/book/Date';
-const BookTime = lazy(() => import('@/pages/book/Time'));
 const BookDetails = lazy(() => import('@/pages/book/Details'));
 const BookConfirm = lazy(() => import('@/pages/book/Confirm'));
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -28,7 +27,7 @@ const App = () => (
                     {/* Flujo de reservas. */}
                     <Route path="/book/service" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando servicios…</div>}><BookService /></Suspense>} />
                     <Route path="/book/date" element={<BookDate />} />
-                    <Route path="/book/time" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando horarios…</div>}><BookTime /></Suspense>} />
+                    {/** Ruta /book/time eliminada: flujo es Service -> Date -> Confirm */}
                     <Route path="/book/details" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando…</div>}><BookDetails /></Suspense>} />
                     <Route path="/book/confirm" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando confirmación…</div>}><BookConfirm /></Suspense>} />
                     <Route

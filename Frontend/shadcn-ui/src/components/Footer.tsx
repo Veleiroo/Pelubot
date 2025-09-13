@@ -26,9 +26,9 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="flex items-center mb-4">
-              <Scissors className="text-[#00D4AA] mr-3" size={32} />
+              <Scissors className="text-brand mr-3" size={32} />
               <h3 className="text-2xl font-bold text-white">
-                <span className="text-[#00D4AA]">Deinis</span> Barber Club
+                <span className="text-brand">Deinis</span> Barber Club
               </h3>
             </div>
             <p className="text-gray-400 mb-6 max-w-md leading-relaxed">
@@ -40,19 +40,19 @@ export default function Footer() {
             <div className="flex space-x-4">
               <button
                 onClick={() => handleSocialClick('instagram')}
-                className="p-3 bg-[#1a1a1a] hover:bg-[#00D4AA] text-gray-400 hover:text-black rounded-lg transition-all duration-300"
+                className="p-3 bg-[#1a1a1a] hover:bg-brand text-gray-400 hover:text-black rounded-lg transition-all duration-300"
               >
                 <Instagram size={20} />
               </button>
               <button
                 onClick={() => handleSocialClick('facebook')}
-                className="p-3 bg-[#1a1a1a] hover:bg-[#00D4AA] text-gray-400 hover:text-black rounded-lg transition-all duration-300"
+                className="p-3 bg-[#1a1a1a] hover:bg-brand text-gray-400 hover:text-black rounded-lg transition-all duration-300"
               >
                 <Facebook size={20} />
               </button>
               <button
                 onClick={() => handleSocialClick('twitter')}
-                className="p-3 bg-[#1a1a1a] hover:bg-[#00D4AA] text-gray-400 hover:text-black rounded-lg transition-all duration-300"
+                className="p-3 bg-[#1a1a1a] hover:bg-brand text-gray-400 hover:text-black rounded-lg transition-all duration-300"
               >
                 <Twitter size={20} />
               </button>
@@ -66,7 +66,7 @@ export default function Footer() {
               <li>
                 <button
                   onClick={() => scrollToSection('inicio')}
-                  className="text-gray-400 hover:text-[#00D4AA] transition-colors"
+                  className="text-gray-400 hover:text-brand transition-colors"
                 >
                   Inicio
                 </button>
@@ -74,7 +74,7 @@ export default function Footer() {
               <li>
                 <button
                   onClick={() => scrollToSection('sobre-nosotros')}
-                  className="text-gray-400 hover:text-[#00D4AA] transition-colors"
+                  className="text-gray-400 hover:text-brand transition-colors"
                 >
                   Sobre Nosotros
                 </button>
@@ -82,7 +82,7 @@ export default function Footer() {
               <li>
                 <button
                   onClick={() => scrollToSection('servicios')}
-                  className="text-gray-400 hover:text-[#00D4AA] transition-colors"
+                  className="text-gray-400 hover:text-brand transition-colors"
                 >
                   Servicios
                 </button>
@@ -90,7 +90,7 @@ export default function Footer() {
               <li>
                 <button
                   onClick={() => scrollToSection('galeria')}
-                  className="text-gray-400 hover:text-[#00D4AA] transition-colors"
+                  className="text-gray-400 hover:text-brand transition-colors"
                 >
                   Galería
                 </button>
@@ -98,7 +98,7 @@ export default function Footer() {
               <li>
                 <button
                   onClick={() => scrollToSection('contacto')}
-                  className="text-gray-400 hover:text-[#00D4AA] transition-colors"
+                  className="text-gray-400 hover:text-brand transition-colors"
                 >
                   Contacto
                 </button>
@@ -111,24 +111,24 @@ export default function Footer() {
             <h4 className="text-white font-semibold mb-4">Contacto</h4>
             <ul className="space-y-3">
               <li className="flex items-start space-x-3">
-                <MapPin className="text-[#00D4AA] mt-1 flex-shrink-0" size={16} />
+                <MapPin className="text-brand mt-1 flex-shrink-0" size={16} />
                 <span className="text-gray-400 text-sm">
                   Calle Principal 123<br />
                   28001 Madrid, España
                 </span>
               </li>
               <li className="flex items-center space-x-3">
-                <Phone className="text-[#00D4AA] flex-shrink-0" size={16} />
+                <Phone className="text-brand flex-shrink-0" size={16} />
                 <span className="text-gray-400 text-sm">+34 123 456 789</span>
               </li>
               <li className="flex items-center space-x-3">
-                <Mail className="text-[#00D4AA] flex-shrink-0" size={16} />
+                <Mail className="text-brand flex-shrink-0" size={16} />
                 <span className="text-gray-400 text-sm">info@deinisbarberclub.com</span>
               </li>
             </ul>
 
             <div className="mt-6 p-4 bg-[#1a1a1a] rounded-lg border border-gray-800">
-              <p className="text-[#00D4AA] text-sm font-semibold mb-1">Horario de Atención</p>
+              <p className="text-brand text-sm font-semibold mb-1">Horario de Atención</p>
               <p className="text-gray-400 text-xs">Lun-Vie: 9:00-20:00</p>
               <p className="text-gray-400 text-xs">Sáb: 9:00-18:00 | Dom: 10:00-16:00</p>
             </div>
@@ -142,10 +142,10 @@ export default function Footer() {
               © {currentYear} Deinis Barber Club. Todos los derechos reservados.
             </p>
             <div className="flex space-x-6 text-sm">
-              <a href="#" className="text-gray-400 hover:text-[#00D4AA] transition-colors">
+              <a href="#" className="text-gray-400 hover:text-brand transition-colors">
                 Política de Privacidad
               </a>
-              <a href="#" className="text-gray-400 hover:text-[#00D4AA] transition-colors">
+              <a href="#" className="text-gray-400 hover:text-brand transition-colors">
                 Términos de Servicio
               </a>
             </div>

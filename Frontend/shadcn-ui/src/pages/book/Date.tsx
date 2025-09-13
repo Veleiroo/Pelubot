@@ -1,17 +1,17 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBooking } from '@/store/booking';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-// Calendario visual (opcional): si VITE_ENABLE_CALENDAR está activo, se muestra; si no,
-// el usuario puede usar el selector nativo de fecha. En ambos casos habrá lista de huecos.
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
+import { BookingSection } from '@/components/book/BookingSection';
+import { BookingSteps } from '@/components/BookingSteps';
+import { Card, CardContent } from '@/components/ui/card';
+import { addDays, addMonths, endOfMonth, endOfWeek, format, isAfter, isBefore, isSameDay, isSameMonth, isToday, startOfMonth, startOfWeek, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
-import BookingLayout from '@/components/BookingLayout';
+import { CalendarNav } from '@/components/ui/CalendarNav';
+import '@/styles/calendar.css';
 
 const toYmd = (d: Date) => {
   const y = d.getFullYear();
@@ -19,9 +19,6 @@ const toYmd = (d: Date) => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 };
-
-const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
-const endOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
 
 const ANY_PRO = '__any__';
 
@@ -49,6 +46,7 @@ const BookDate = () => {
   const slotsAbort = useRef<AbortController | null>(null);
   const daysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slotsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [focusedDate, setFocusedDate] = useState<Date>(() => new Date());
 
   // Leer servicio de la URL (fallback por si el estado aún no está)
   useEffect(() => {
@@ -60,6 +58,17 @@ const BookDate = () => {
       setService(sid);
     }
   }, [location.search, serviceId, setService]);
+  // Rehidratar fecha seleccionada desde el slot si venimos de Confirm
+  useEffect(() => {
+    if (slotStart && !selected) {
+      const d = new Date(slotStart);
+      d.setHours(0, 0, 0, 0);
+      setSelected(d);
+      setDate(toYmd(d));
+      setMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+      setFocusedDate(d);
+    }
+  }, [slotStart, selected, setDate]);
   useEffect(() => {
     const sid = new URLSearchParams(location.search).get('service');
     // Si no hay servicio en el store ni en la URL, volver al selector de servicio.
@@ -125,14 +134,13 @@ const BookDate = () => {
     return d;
   }, [today]);
 
-  const isDisabled = (d: Date) => {
-    const nd = new Date(d);
+  const selectedValid = useMemo(() => {
+    if (!selected) return false;
+    const nd = new Date(selected);
     nd.setHours(0, 0, 0, 0);
-    if (nd < today) return true;
-    return !avail.has(toYmd(nd));
-  };
-
-  const selectedValid = selected && !isDisabled(selected as Date);
+    if (nd < today || nd > maxDate) return false;
+    return avail.has(toYmd(nd));
+  }, [selected, today, maxDate, avail]);
   const canContinue = !!slotStart; // requiere elegir un hueco
 
   const onNext = () => {
@@ -186,14 +194,72 @@ const BookDate = () => {
   // Fallback mínimo por si algo falla antes de montar el calendario
   if (!serviceId && !new URLSearchParams(location.search).get('service')) {
     return (
-      <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige un servicio para continuar">
-        <div className="flex flex-col items-center gap-4">
-          <div className="text-xl">Necesitas seleccionar un servicio</div>
-          <Button onClick={() => navigate('/book/service')}>Ir a servicios</Button>
-        </div>
-      </BookingLayout>
+      <>
+        <BookingSteps />
+        <BookingSection title="Selecciona un servicio" subtitle="Elige un servicio para continuar">
+          <div className="flex flex-col items-center gap-3">
+            <div className="text-base">Necesitas seleccionar un servicio</div>
+            <Button onClick={() => navigate('/book/service')} className="h-10 px-5 bg-accent text-[var(--accent-contrast)] hover:bg-emerald-400 transition-colors duration-150">Ir a servicios</Button>
+          </div>
+        </BookingSection>
+      </>
     );
   }
+
+  // Construir grilla del mes actual (lunes-domingo)
+  const monthStart = useMemo(() => startOfMonth(month), [month]);
+  const monthEnd = useMemo(() => endOfMonth(month), [month]);
+  const gridStart = useMemo(() => startOfWeek(monthStart, { weekStartsOn: 1 }), [monthStart]);
+  const gridEnd = useMemo(() => endOfWeek(monthEnd, { weekStartsOn: 1 }), [monthEnd]);
+  const days = useMemo(() => {
+    const list: Date[] = [];
+    let d = gridStart;
+    while (d <= gridEnd) {
+      list.push(d);
+      d = addDays(d, 1);
+    }
+    return list;
+  }, [gridStart, gridEnd]);
+
+  // Mover foco con teclado dentro del grid
+  const onGridKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const key = e.key;
+    let next = focusedDate || today;
+    if (key === 'ArrowLeft') { next = addDays(next, -1); e.preventDefault(); }
+    else if (key === 'ArrowRight') { next = addDays(next, 1); e.preventDefault(); }
+    else if (key === 'ArrowUp') { next = addDays(next, -7); e.preventDefault(); }
+    else if (key === 'ArrowDown') { next = addDays(next, 7); e.preventDefault(); }
+    else if (key === 'PageUp') { next = addMonths(next, -1); e.preventDefault(); }
+    else if (key === 'PageDown') { next = addMonths(next, 1); e.preventDefault(); }
+    else if (key === 'Enter' || key === ' ') {
+      // Seleccionar si es habilitado
+      const ymd = toYmd(focusedDate);
+      const enabled = isSameMonth(focusedDate, month) && !isBefore(focusedDate, today) && !isAfter(focusedDate, maxDate) && avail.has(ymd);
+      if (enabled) {
+        setSelected(focusedDate);
+        setDate(toYmd(focusedDate));
+      }
+      return;
+    } else {
+      return;
+    }
+    // cambiar mes si cruza borde
+    if (next.getMonth() !== month.getMonth() || next.getFullYear() !== month.getFullYear()) {
+      setMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+    }
+    setFocusedDate(next);
+  }, [focusedDate, month, today, maxDate, avail, setDate]);
+
+  const onPrevMonth = () => setMonth(subMonths(month, 1));
+  const onNextMonth = () => setMonth(addMonths(month, 1));
+
+  // Asegurar foco en cambio de mes
+  useEffect(() => {
+    // Si el focus está fuera del grid actual, llévalo al primer día del mes
+    if (focusedDate < gridStart || focusedDate > gridEnd) {
+      setFocusedDate(monthStart);
+    }
+  }, [gridStart, gridEnd, monthStart, focusedDate]);
 
   return (
     <BookingLayout
@@ -242,80 +308,143 @@ const BookDate = () => {
             Días en verde = hay disponibilidad para el servicio elegido.
           </div>
         </div>
-        {/* Toggle avanzado de GCal oculto en interfaz pública. Si quieres mostrarlo, quita este bloque. */}
-        {loading && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
-            <div className="text-sm text-neutral-200 bg-neutral-800 px-3 py-2 rounded">Comprobando disponibilidad…</div>
-          </div>
-        )}
-        
-      </div>
-      {/* Huecos disponibles */}
-      <div className="space-y-4">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold mb-2">
-            {selectedValid ? `Horarios disponibles para ${toYmd(selected as Date)}` : 'Selecciona una fecha'}
-          </h3>
-          {selectedValid && (
-            <p className="text-sm text-neutral-400">
-              Haz clic en un horario para continuar
+        <div className="relative">
+          <Card className="rounded-2xl border border-[var(--border)] bg-[var(--card)] backdrop-blur shadow-lg shadow-black/20 w-full">
+            <CardContent className="p-4">
+            {/* Header de calendario */}
+            <div className="mb-2">
+              <CalendarNav month={month} onPrev={onPrevMonth} onNext={onNextMonth} />
+            </div>
+
+            {/* Nombres de días */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-1.5 mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+              {['lu','ma','mi','ju','vi','sá','do'].map((w) => (
+                <div key={w} className="h-8 flex items-center justify-center">{w}</div>
+              ))}
+            </div>
+
+            {/* Grid de días */}
+            <div
+              key={`${month.getFullYear()}-${month.getMonth()}`}
+              role="grid"
+              aria-label={format(month, 'LLLL yyyy', { locale: es })}
+              className="grid grid-cols-7 gap-1 sm:gap-1.5 cal-fade"
+              tabIndex={0}
+              onKeyDown={onGridKeyDown}
+            >
+              {days.map((d) => {
+                const ymd = toYmd(d);
+                const inMonth = isSameMonth(d, month);
+                const outOfRange = isBefore(d, today) || isAfter(d, maxDate);
+                const enabled = inMonth && !outOfRange && avail.has(ymd);
+                const selectedDay = selected ? isSameDay(d, selected) : false;
+                const isFocused = isSameDay(d, focusedDate);
+                const classes = [
+                  'aspect-square flex items-center justify-center rounded-md text-[13px] sm:text-sm',
+                  '[font-variant-numeric:tabular-nums] transition-colors duration-150',
+                  isToday(d) ? 'ring-1 ring-white/10' : '',
+                  !inMonth ? 'text-muted-foreground/60 cursor-not-allowed' : (
+                    enabled ? (selectedDay ? 'bg-accent text-[var(--accent-contrast)]' : 'bg-[var(--accent-weak)] text-emerald-400 hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]') : 'text-muted-foreground/60 cursor-not-allowed'
+                  )
+                ].filter(Boolean).join(' ');
+                return (
+                  <button
+                    key={ymd}
+                    type="button"
+                    role="gridcell"
+                    aria-selected={selectedDay}
+                    aria-disabled={!enabled}
+                    aria-current={isToday(d) ? 'date' : undefined}
+                    data-today={isToday(d)}
+                    data-selected={selectedDay}
+                    data-enabled={enabled}
+                    data-disabled={!enabled}
+                    disabled={!enabled}
+                    tabIndex={isFocused ? 0 : -1}
+                    onClick={() => {
+                      if (!enabled) return;
+                      setSelected(d);
+                      setDate(ymd);
+                      setFocusedDate(d);
+                    }}
+                    className={classes}
+                  >
+                    {String(d.getDate())}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Leyenda */}
+            <p className="mt-3 text-xs text-muted-foreground text-center">
+              Días en verde = hay disponibilidad para el servicio elegido.
             </p>
+            </CardContent>
+          </Card>
+
+          {/* Capa de carga */}
+          {loading && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
+              <div className="text-sm text-neutral-200 bg-neutral-800 px-3 py-2 rounded">Comprobando disponibilidad…</div>
+            </div>
           )}
         </div>
-        
-        {slotsLoading && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 rounded-lg" />
-            ))}
-          </div>
-        )}
-        
-        {!slotsLoading && selectedValid && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {slots.map((iso) => (
-              <Button
-                key={iso}
-                variant={slotStart === iso ? 'default' : 'outline'}
-                size="lg"
-                className={`h-12 ${
-                  slotStart === iso 
-                    ? 'bg-blue-600 hover:bg-blue-700' 
-                    : 'border-neutral-600 hover:bg-neutral-800'
-                }`}
-                onClick={() => {
-                  setSlot(iso);
-                  // asegura fecha en store
-                  if (selectedValid) {
-                    setDate(toYmd(selected as Date));
-                  }
-                  // Navegar a Confirmar pasando parámetros robustos
-                  const params = new URLSearchParams();
-                  if (serviceId) params.set('service', serviceId);
-                  params.set('start', iso);
-                  if (professionalId) params.set('pro', professionalId);
-                  navigate(`/book/confirm?${params.toString()}`);
-                }}
-              >
-                {iso.slice(11, 16)}
-              </Button>
-            ))}
-            {slots.length === 0 && (
-              <div className="col-span-full text-center py-8">
-                <div className="text-neutral-400 mb-2">No hay horarios disponibles</div>
-                <div className="text-sm text-neutral-500">Intenta con otra fecha o profesional</div>
-              </div>
+        {/* Horarios disponibles */}
+        <Card className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] backdrop-blur shadow-lg shadow-black/20">
+          <CardContent className="p-4">
+          <div className="mb-3 text-center">
+            <h3 className="text-base font-medium">
+              {selectedValid ? `Horarios disponibles para ${toYmd(selected as Date)}` : 'Selecciona una fecha'}
+            </h3>
+            {selectedValid && (
+              <p className="text-xs text-muted-foreground mt-1">Haz clic en un horario para continuar</p>
             )}
           </div>
-        )}
-      </div>
 
-      <div className="mt-1 flex justify-end">
-        <Button disabled={!canContinue || slots.length === 0} onClick={onNext}>
-          Continuar
-        </Button>
-      </div>
-    </BookingLayout>
+          {slotsLoading && (
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 rounded-md" />
+              ))}
+            </div>
+          )}
+
+          {!slotsLoading && selectedValid && (
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              {slots.map((iso) => {
+                return (
+                  <Button
+                    key={iso}
+                    variant="secondary"
+                    className="h-9 rounded-md border border-[var(--border)] bg-white/0 hover:bg-white/5 transition-colors duration-150"
+                    onClick={() => {
+                      setSlot(iso);
+                      if (selectedValid) setDate(toYmd(selected as Date));
+                    }}
+                  >
+                    {iso.slice(11, 16)}
+                  </Button>
+                );
+              })}
+              {slots.length === 0 && (
+                <div className="col-span-full text-center py-6">
+                  <div className="text-neutral-400 mb-1">No hay horarios disponibles</div>
+                  <div className="text-xs text-muted-foreground">Intenta con otra fecha o profesional</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CTA centrada */}
+          <div className="mt-4 flex justify-center">
+            <Button disabled={!canContinue || slots.length === 0} onClick={onNext} className="h-11 px-6 bg-accent text-[var(--accent-contrast)] hover:bg-emerald-400 disabled:opacity-50 disabled:pointer-events-none transition-colors duration-150">
+              Continuar
+            </Button>
+          </div>
+          </CardContent>
+        </Card>
+      </BookingSection>
+    </>
   );
 };
 

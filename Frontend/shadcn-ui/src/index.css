@@ -3,6 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+  /* Brand tokens (neutral dark + emerald accent) */
+  :root {
+    --bg: #0b1014;
+    --card: rgba(16, 23, 30, 0.7);
+    /* Border in HSL syntax so Tailwind hsl(var(--border)) stays valid */
+    --border: 0 0% 100% / 0.06;
+    --muted: rgba(255, 255, 255, 0.55);
+    /* Accent helpers for direct var() usage */
+    --accent-weak: rgba(16, 185, 129, 0.12);
+    --accent-hover: rgba(16, 185, 129, 0.2);
+    --accent-contrast: #052e2a;
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
@@ -22,8 +35,9 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent brand = emerald */
+    --accent: 160 84% 39%;
+    --accent-foreground: 160 100% 10%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -70,8 +84,9 @@
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent brand = emerald */
+    --accent: 160 84% 39%;
+    --accent-foreground: 160 100% 10%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -96,14 +111,64 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    /* Override to neutral dark background */
+    background: var(--bg);
+    @apply text-foreground;
   }
 }
 
-/* Calendario: ocultar días fuera del mes y marcar navegación deshabilitada */
+/* Calendario (DayPicker) — estilo consistente y alineado */
+/* Mostrar celdas fuera de mes como huecos en blanco, sin romper el grid */
 .pelu-cal .rdp-outside,
 .pelu-cal [data-outside="true"] {
-  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Weekdays */
+.pelu-cal .rdp-head_cell {
+  color: #a3a3a3; /* neutral-400 */
+  font-weight: 600;
+}
+
+/* Celdas de días */
+.pelu-cal .rdp-day {
+  height: 40px;
+  width: 40px;
+  border-radius: 8px;
+}
+.pelu-cal .rdp-day:where([aria-disabled="true"]) {
+  opacity: .4;
+}
+
+/* Día seleccionado (marca) */
+.pelu-cal .rdp-day_selected:not([data-outside]) {
+  background: #00D4AA;
+  color: #0a0a0a;
+}
+.pelu-cal .rdp-day_selected:not([data-outside]):hover {
+  background: #00b894; /* hover */
+}
+
+/* Navegación de meses */
+.pelu-cal .rdp-caption_label {
+  font-weight: 700;
+}
+.pelu-cal .rdp-nav {
+  display: flex;
+  gap: 6px;
+}
+.pelu-cal .rdp-nav_button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #2a2a2a;
+  background: #111111;
+  color: #e5e7eb; /* neutral-200 */
+}
+.pelu-cal .rdp-nav_button:hover {
+  border-color: #00D4AA;
+  color: #00D4AA;
 }
 .pelu-cal .rdp-nav_button[disabled] {
   opacity: .35;
