@@ -5,10 +5,11 @@ interface BookingLayoutProps {
   steps: BookingStep[];
   title: string;
   subtitle?: string;
+  summary?: string;
   children: ReactNode;
 }
 
-export function BookingLayout({ steps, title, subtitle, children }: BookingLayoutProps) {
+export function BookingLayout({ steps, title, subtitle, summary, children }: BookingLayoutProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-900/5 to-transparent"></div>
@@ -32,6 +33,8 @@ export function BookingLayout({ steps, title, subtitle, children }: BookingLayou
               {subtitle}
             </p>
           )}
+          
+          {summary && <p className="text-sm text-neutral-300" aria-live="polite">{summary}</p>}
         </div>
 
         <div className="animate-in fade-in-50 slide-in-from-bottom-4 duration-700 delay-200">

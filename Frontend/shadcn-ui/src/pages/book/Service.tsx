@@ -87,24 +87,32 @@ const Service = () => {
   };
 
   return (
-    <>
-      <BookingSteps />
-      <BookingSection title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar y comienza tu experiencia">
-        <div role="list" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((s) => (
-            <ServiceCard
-              key={s.id}
-              title={s.name}
-              duration={`${s.duration_min} minutos`}
-              price={`${s.price_eur} €`}
-              icon={iconMap[s.id] || Sparkles}
-              onSelect={() => onSelect(s.id)}
-              attrsId={`svc-${s.id}-attrs`}
-            />
-          ))}
-        </div>
-      </BookingSection>
-    </>
+    <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {services.map((s) => (
+          <Card key={s.id} className="border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800 transition-colors">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl">{s.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-neutral-300">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span>Duración: {s.duration_min} minutos</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-neutral-300">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span>Precio: {s.price_eur} €</span>
+                </div>
+              </div>
+              <Button onClick={() => onSelect(s.id)} className="w-full" size="lg">
+                Seleccionar
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </BookingLayout>
   );
 };
 
