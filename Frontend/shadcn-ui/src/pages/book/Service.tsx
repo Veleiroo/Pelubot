@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, Service as Svc } from '@/lib/api';
 import { useBooking } from '@/store/booking';
-import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import BookingLayout from '@/components/BookingLayout';
+import { BookingSection } from '@/components/book/BookingSection';
+import { ServiceCard } from '@/components/book/ServiceCard';
+import { Scissors, Palette, Sparkles, LucideIcon, Crown, Zap } from 'lucide-react';
+import { BookingSteps } from '@/components/BookingSteps';
+import { BookingLayout } from '@/components/BookingLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const Service = () => {
   const navigate = useNavigate();
@@ -29,43 +33,45 @@ const Service = () => {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
-
-  const steps = [
-    { key: 'service', label: 'Servicio', active: true },
-    { key: 'date', label: 'Fecha y hora' },
-    { key: 'confirm', label: 'Confirmar' },
-  ];
 
   if (loading)
     return (
-      <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="border-neutral-800 bg-neutral-900">
-              <CardHeader>
-                <Skeleton className="h-6 w-40" />
-              </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <div className="space-y-2 w-full">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-4 w-24" />
+      <>
+        <BookingSteps />
+        <BookingSection title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
+          <div role="list" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Skeleton className="h-12 w-12 rounded-xl" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </BookingLayout>
+                <Skeleton className="h-10 w-full rounded-md" />
+              </div>
+            ))}
+          </div>
+        </BookingSection>
+      </>
     );
 
   if (error)
     return (
-      <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
-        <div className="text-red-500">{error}</div>
-      </BookingLayout>
+      <>
+        <BookingSteps />
+        <BookingSection title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
+          <div className="text-center py-12">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 mb-4">
+              <Zap className="h-6 w-6 text-red-400" />
+            </div>
+            <div className="text-red-400 text-sm font-medium">{error}</div>
+          </div>
+        </BookingSection>
+      </>
     );
 
   const onSelect = (svc: Svc) => {
@@ -73,6 +79,19 @@ const Service = () => {
     // Pasamos el servicio en la URL para evitar cualquier condición de carrera del store.
     navigate(`/book/date?service=${encodeURIComponent(svc.id)}`);
   };
+
+  const iconMap: Record<string, LucideIcon> = {
+    corte: Scissors,
+    tinte: Palette,
+    barba: Sparkles,
+    premium: Crown,
+  };
+
+  const steps = [
+    { key: 'service', label: 'Servicio', active: true },
+    { key: 'date', label: 'Fecha y hora' },
+    { key: 'confirm', label: 'Confirmar' },
+  ];
 
   return (
     <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">

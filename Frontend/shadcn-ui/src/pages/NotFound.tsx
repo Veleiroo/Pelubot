@@ -21,7 +21,7 @@ export default function NotFoundPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-black p-6 text-center text-white">
       <div className="space-y-6 max-w-md">
         <div className="space-y-3">
-          <h1 className="text-8xl font-bold text-[#00D4AA]">404</h1>
+          <h1 className="text-8xl font-bold text-brand">404</h1>
           <h2 className="text-2xl font-semibold">Página no encontrada</h2>
           <p className="text-neutral-400">La página solicitada no existe o pudo haberse movido.</p>
         </div>

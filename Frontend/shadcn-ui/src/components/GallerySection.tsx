@@ -69,7 +69,7 @@ export default function GallerySection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Galería de <span className="text-[#00D4AA]">Trabajos</span>
+            Galería de <span className="text-brand">Trabajos</span>
           </h2>
           <p className="text-gray-300 text-lg max-w-2xl mx-auto">
             Descubre nuestro trabajo y la experiencia que ofrecemos. 
@@ -94,7 +94,7 @@ export default function GallerySection() {
               {/* Overlay */}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-[#00D4AA] text-sm font-semibold mb-2">
+                  <div className="text-brand text-sm font-semibold mb-2">
                     {image.category}
                   </div>
                   <div className="text-white text-lg font-bold">
@@ -104,7 +104,7 @@ export default function GallerySection() {
               </div>
 
               {/* Category Badge */}
-              <div className="absolute top-4 left-4 bg-[#00D4AA] text-black px-3 py-1 rounded-full text-sm font-semibold">
+              <div className="absolute top-4 left-4 bg-brand text-black px-3 py-1 rounded-full text-sm font-semibold">
                 {image.category}
               </div>
             </div>
@@ -124,7 +124,7 @@ export default function GallerySection() {
               {/* Close Button */}
               <button
                 onClick={closeLightbox}
-                className="absolute top-4 right-4 text-white hover:text-[#00D4AA] transition-colors"
+                className="absolute top-4 right-4 text-white hover:text-brand transition-colors"
               >
                 <X size={32} />
               </button>
@@ -132,20 +132,20 @@ export default function GallerySection() {
               {/* Navigation Buttons */}
               <button
                 onClick={prevImage}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-[#00D4AA] transition-colors"
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-brand transition-colors"
               >
                 <ChevronLeft size={48} />
               </button>
               <button
                 onClick={nextImage}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-[#00D4AA] transition-colors"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-brand transition-colors"
               >
                 <ChevronRight size={48} />
               </button>
 
               {/* Image Info */}
               <div className="absolute bottom-4 left-4 text-white">
-                <div className="text-[#00D4AA] text-sm font-semibold">
+                <div className="text-brand text-sm font-semibold">
                   {galleryImages[selectedImage].category}
                 </div>
                 <div className="text-lg">
@@ -166,7 +166,7 @@ export default function GallerySection() {
           <p className="text-gray-400 mb-6">¿Te gusta lo que ves?</p>
           <button
             onClick={handleReservation}
-            className="bg-[#00D4AA] hover:bg-[#00B894] text-black font-bold px-8 py-4 rounded-lg transition-all duration-300 transform hover:scale-105"
+            className="bg-brand hover:bg-[#00B894] text-black font-bold px-8 py-4 rounded-lg transition-all duration-300 transform hover:scale-105"
           >
             RESERVA TU CITA AHORA
           </button>

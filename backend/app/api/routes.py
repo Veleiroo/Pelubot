@@ -111,6 +111,19 @@ def list_reservations(session: Session = Depends(get_session)):
     for r in rows:
         created = r.created_at
         updated = getattr(r, "updated_at", None)
+        start = r.start
+        end = r.end
+        # Asegurar TZ en fechas si vinieran naive por datos antiguos
+        if start is not None and getattr(start, "tzinfo", None) is None:
+            try:
+                start = start.replace(tzinfo=TZ)
+            except Exception:
+                pass
+        if end is not None and getattr(end, "tzinfo", None) is None:
+            try:
+                end = end.replace(tzinfo=TZ)
+            except Exception:
+                pass
         if created is not None and created.tzinfo is None:
             created = created.replace(tzinfo=_utc_tz.utc)
         if updated is not None and updated.tzinfo is None:
@@ -119,8 +132,8 @@ def list_reservations(session: Session = Depends(get_session)):
             "id": r.id,
             "service_id": r.service_id,
             "professional_id": r.professional_id,
-            "start": r.start.isoformat() if hasattr(r.start, "isoformat") else r.start,
-            "end": r.end.isoformat() if hasattr(r.end, "isoformat") else r.end,
+            "start": start.isoformat() if hasattr(start, "isoformat") else start,
+            "end": end.isoformat() if hasattr(end, "isoformat") else end,
             "google_event_id": r.google_event_id,
             "google_calendar_id": r.google_calendar_id,
             "created_at": created.isoformat() if created else None,

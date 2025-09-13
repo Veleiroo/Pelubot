@@ -39,6 +39,9 @@ help:
 	@echo "  make docker-start # up without --build"
 	@echo "  make docker-rebuild-backend  # rebuild only backend"
 	@echo "  make docker-rebuild-frontend # rebuild only frontend"
+	@echo "  make docker-dev   # run backend + frontend-dev (Vite) on :8080"
+	@echo "  make docker-prod  # rebuild frontend (no cache) and run prod"
+	@echo "  make docker-rebuild # force rebuild frontend image (no cache)"
 	@echo "  make e2e         # run Playwright tests (headless)"
 	@echo "  make e2e-headed  # run Playwright headed (debug)"
 
@@ -170,6 +173,23 @@ docker-rebuild-backend:
 
 docker-rebuild-frontend:
 	$(DOCKER) up -d --no-deps --build frontend
+
+docker-dev:
+	# Stop prod frontend if running to free :8080
+	-$(DOCKER) stop frontend >/dev/null 2>&1 || true
+	$(DOCKER) up -d backend frontend-dev
+	@echo "Dev running: http://localhost:$${FRONTEND_PORT:-8080} (Vite)"
+
+docker-prod:
+	# Stop dev frontend if running
+	-$(DOCKER) stop frontend-dev >/dev/null 2>&1 || true
+	$(DOCKER) build --no-cache frontend
+	$(DOCKER) up -d backend frontend
+	@echo "Prod running: http://localhost:$${FRONTEND_PORT:-8080} (nginx)"
+
+docker-rebuild:
+	$(DOCKER) build --no-cache frontend
+	$(DOCKER) up -d frontend
 
 e2e:
 	# Ensure app is up before running E2E (prefer start to avoid recreate on compose v1)

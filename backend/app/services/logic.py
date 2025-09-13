@@ -194,6 +194,7 @@ def apply_reschedule(session: Session, payload: RescheduleIn) -> Tuple[bool, str
     if new_pro not in PRO_BY_ID:
         return False, "professional_id no existe.", None
 
+    # Usamos naive local únicamente para comparaciones internas; en BD guardamos TZ-aware
     start_dt = _to_naive_local(new_start_dt)
     end_dt = start_dt + timedelta(minutes=service.duration_min)
 
@@ -207,8 +208,13 @@ def apply_reschedule(session: Session, payload: RescheduleIn) -> Tuple[bool, str
             return False, f"El profesional {PRO_BY_ID[new_pro].name} ya tiene esa hora ocupada.", None
 
     r.professional_id = new_pro
-    r.start = start_dt
-    r.end = end_dt
+    # Persistimos como TZ-aware (coherente con columnas timezone=True)
+    try:
+        tz = ZoneInfo(TZ)
+    except Exception:
+        tz = None
+    r.start = start_dt.replace(tzinfo=tz) if tz else start_dt
+    r.end = end_dt.replace(tzinfo=tz) if tz else end_dt
     r.updated_at = datetime.now(_utc_tz.utc)
     session.add(r)
     session.commit()
