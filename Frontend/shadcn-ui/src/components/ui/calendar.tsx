@@ -2,6 +2,7 @@ import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { es as esLocale } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
@@ -11,8 +12,8 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 function Calendar({ className, classNames, showOutsideDays = true, locale, ...props }: CalendarProps) {
   // Usar español con lunes como primer día
   const loc = React.useMemo(() => {
-    const base: any = locale ?? esLocale;
-    return { ...base, options: { ...(base.options || {}), weekStartsOn: 1 } };
+    const base: Locale = locale ?? esLocale;
+    return { ...base, options: { ...(base.options || {}), weekStartsOn: 1 } } as Locale;
   }, [locale]);
 
   // Límite de navegación: hoy .. hoy + 183 días (≈6 meses)
@@ -22,8 +23,8 @@ function Calendar({ className, classNames, showOutsideDays = true, locale, ...pr
     d.setDate(d.getDate() + 183);
     return d;
   }, []);
-  const fromMonth = (props as any).fromMonth ?? today;
-  const toMonth = (props as any).toMonth ?? toMonthDefault;
+  const fromMonth = props.fromMonth ?? today;
+  const toMonth = props.toMonth ?? toMonthDefault;
 
   return (
     <DayPicker

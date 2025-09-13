@@ -14,13 +14,13 @@ const mask = (s?: string) => {
 };
 
 const Debug = () => {
-  const BASE = (import.meta as any).env.VITE_API_BASE_URL || 'http://127.0.0.1:8776';
+  const BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8776';
   const navigate = useNavigate();
-  const KEY = (import.meta as any).env.VITE_API_KEY as string | undefined;
-  const [health, setHealth] = useState<any>(null);
-  const [ready, setReady] = useState<any>(null);
-  const [services, setServices] = useState<any[]>([]);
-  const [pros, setPros] = useState<any[]>([]);
+  const KEY = import.meta.env.VITE_API_KEY as string | undefined;
+  const [health, setHealth] = useState<unknown>(null);
+  const [ready, setReady] = useState<unknown>(null);
+  const [services, setServices] = useState<unknown[]>([]);
+  const [pros, setPros] = useState<unknown[]>([]);
   const [days, setDays] = useState<string[]>([]);
   const [slots, setSlots] = useState<string[]>([]);
   const [date, setDate] = useState<string>('');
@@ -31,10 +31,10 @@ const Debug = () => {
 
   useEffect(() => {
     (async () => {
-      try { setHealth(await fetch(BASE + '/health').then(r => r.json())); } catch {}
-      try { setReady(await fetch(BASE + '/ready').then(r => r.json())); } catch {}
-      try { setServices(await api.getServices()); } catch {}
-      try { setPros(await api.getProfessionals()); } catch {}
+      try { setHealth(await fetch(BASE + '/health').then(r => r.json())); } catch { /* noop */ }
+      try { setReady(await fetch(BASE + '/ready').then(r => r.json())); } catch { /* noop */ }
+      try { setServices(await api.getServices()); } catch { /* noop */ }
+      try { setPros(await api.getProfessionals()); } catch { /* noop */ }
     })();
   }, [BASE]);
 
