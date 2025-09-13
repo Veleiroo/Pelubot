@@ -66,3 +66,4 @@ e2e/artifacts/
 e2e/artifacts-out/
 e2e/test-results/
 e2e/playwright-report/
+e2e/node_modules/

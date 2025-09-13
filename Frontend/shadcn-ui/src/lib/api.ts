@@ -10,12 +10,17 @@ type ActionResult = { ok: boolean; message: string };
 type DaysAvailabilityOut = { service_id: string; start: string; end: string; professional_id?: string | null; available_days: string[] };
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json", ...(init?.headers as any) };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> ?? {}),
+  };
   if (API_KEY) headers["X-API-Key"] = API_KEY;
   const url = `${BASE}${path}`;
   const started = performance.now();
-  DEBUG && console.debug("HTTP", init?.method || "GET", url, init?.body ? JSON.parse(String(init.body)) : undefined);
-  // Timeout de seguridad de 12s
+  if (DEBUG) {
+    console.debug('HTTP', init?.method || 'GET', url, init?.body ? JSON.parse(String(init.body)) : undefined);
+  }
+  // Timeout de seguridad de 12 s.
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 12_000);
   try {
@@ -23,14 +28,22 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
     const ms = Math.round(performance.now() - started);
     if (!res.ok) {
       let text = '';
-      try { text = await res.text(); } catch {}
+      try {
+        text = await res.text();
+      } catch {
+        /* noop */
+      }
       const rid = res.headers.get('X-Request-ID') || '';
-      const msg = `HTTP ${res.status}${rid ? ` [rid=${rid}]` : ''}${text ? `: ${text.slice(0,200)}` : ''}`;
-      DEBUG && console.warn("HTTP ERR", res.status, url, `${ms}ms`, msg);
+      const msg = `HTTP ${res.status}${rid ? ` [rid=${rid}]` : ''}${text ? `: ${text.slice(0, 200)}` : ''}`;
+      if (DEBUG) {
+        console.warn('HTTP ERR', res.status, url, `${ms}ms`, msg);
+      }
       throw new Error(msg);
     }
-    const data = await res.json() as T;
-    DEBUG && console.debug("HTTP OK", res.status, url, `${ms}ms`, data);
+    const data = (await res.json()) as T;
+    if (DEBUG) {
+      console.debug('HTTP OK', res.status, url, `${ms}ms`, data);
+    }
     return data;
   } finally {
     clearTimeout(timer);
@@ -38,11 +51,11 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // Catalogos
+  // Catálogos.
   getServices: () => http<Service[]>("/services"),
   getProfessionals: () => http<Professional[]>("/professionals"),
 
-  // Slots: el backend espera { service_id, date_str, professional_id? }
+  // Slots. El backend espera { service_id, date_str, professional_id? }.
   getSlots: (args: { service_id: string; date: string; professional_id?: string | null; use_gcal?: boolean }, opts?: { signal?: AbortSignal }) =>
     http<SlotsOut>("/slots", {
       method: "POST",
@@ -55,11 +68,11 @@ export const api = {
       signal: opts?.signal,
     }),
 
-  // Crear reserva: el backend espera { service_id, professional_id, start }
+  // Creación de reservas. El backend espera { service_id, professional_id, start }.
   createReservation: (payload: { service_id: string; professional_id: string; start: string }) =>
     http<ActionResult>("/reservations", { method: "POST", body: JSON.stringify(payload) }),
 
-  // Disponibilidad por días para un rango [start, end]
+  // Disponibilidad por días para un rango [start, end].
   getDaysAvailability: (args: { service_id: string; start: string; end: string; professional_id?: string | null; use_gcal?: boolean }, opts?: { signal?: AbortSignal }) =>
     http<DaysAvailabilityOut>("/slots/days", {
       method: "POST",

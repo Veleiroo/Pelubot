@@ -1,16 +1,18 @@
 import React from 'react';
 
 type Props = { children: React.ReactNode };
-type State = { hasError: boolean; error?: any };
+type State = { hasError: boolean; error?: unknown };
 
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
-  static getDerivedStateFromError(error: any) { return { hasError: true, error }; }
-  componentDidCatch(error: any, info: any) { 
-    try { console.error('ErrorBoundary', error, info); } catch {}
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: unknown, info: React.ErrorInfo) {
+    console.error('ErrorBoundary', error, info);
   }
   render() {
     if (this.state.hasError) {
@@ -32,6 +34,6 @@ export class ErrorBoundary extends React.Component<Props, State> {
         </div>
       );
     }
-    return this.props.children as any;
+    return this.props.children;
   }
 }
