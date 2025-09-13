@@ -200,11 +200,12 @@ const BookDate = () => {
       steps={steps}
       title="Selecciona fecha y hora"
       subtitle="Elige cuándo quieres tu cita"
+      summary={serviceId ? `Servicio: ${serviceId}` : undefined}
     >
       <div className="flex items-center gap-3">
-        <span>Profesional:</span>
+        <Label htmlFor="professional-select">Profesional:</Label>
         <Select value={professionalId ?? ANY_PRO} onValueChange={(v) => setProfessional(v === ANY_PRO ? null : v)}>
-          <SelectTrigger className="w-64">
+          <SelectTrigger id="professional-select" className="w-64" aria-label="Seleccionar profesional">
             <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
@@ -221,6 +222,7 @@ const BookDate = () => {
         <div className="flex flex-col items-center gap-3">
           <div className="rounded-md border border-neutral-800 bg-neutral-900 p-3 w-full max-w-[360px]">
             <Calendar
+              aria-label="Calendario de fechas disponibles"
               mode="single"
               month={month}
               onMonthChange={setMonth}

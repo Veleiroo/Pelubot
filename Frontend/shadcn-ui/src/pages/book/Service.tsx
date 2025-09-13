@@ -93,7 +93,12 @@ const Service = () => {
                   <span>Precio: {s.price_eur} €</span>
                 </div>
               </div>
-              <Button onClick={() => onSelect(s.id)} className="w-full" size="lg">
+              <Button
+                onClick={() => onSelect(s.id)}
+                className="w-full"
+                size="lg"
+                aria-label={`Seleccionar servicio ${s.name}`}
+              >
                 Seleccionar
               </Button>
             </CardContent>
