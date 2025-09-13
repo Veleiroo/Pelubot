@@ -9,8 +9,11 @@ const BookService = lazy(() => import('@/pages/book/Service'));
 import BookDate from '@/pages/book/Date';
 const BookDetails = lazy(() => import('@/pages/book/Details'));
 const BookConfirm = lazy(() => import('@/pages/book/Confirm'));
+import Loading from '@/components/Loading';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-const DEBUG = String(import.meta.env.VITE_ENABLE_DEBUG ?? '0') === '1' || String(import.meta.env.VITE_ENABLE_DEBUG ?? '').toLowerCase() === 'true';
+const DEBUG =
+  String(import.meta.env.VITE_ENABLE_DEBUG ?? '0') === '1' ||
+  String(import.meta.env.VITE_ENABLE_DEBUG ?? '').toLowerCase() === 'true';
 const DebugPage = lazy(() => import('./pages/Debug'));
 
 const queryClient = new QueryClient();
@@ -25,15 +28,36 @@ const App = () => (
                     <Route path="/" element={<Index />} />
 
                     {/* Flujo de reservas. */}
-                    <Route path="/book/service" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando servicios…</div>}><BookService /></Suspense>} />
+                    <Route
+                        path="/book/service"
+                        element={
+                            <Suspense fallback={<Loading />}>
+                                <BookService />
+                            </Suspense>
+                        }
+                    />
                     <Route path="/book/date" element={<BookDate />} />
                     {/** Ruta /book/time eliminada: flujo es Service -> Date -> Confirm */}
-                    <Route path="/book/details" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando…</div>}><BookDetails /></Suspense>} />
-                    <Route path="/book/confirm" element={<Suspense fallback={<div style={{ padding: 16 }}>Cargando confirmación…</div>}><BookConfirm /></Suspense>} />
+                    <Route
+                        path="/book/details"
+                        element={
+                            <Suspense fallback={<Loading />}>
+                                <BookDetails />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="/book/confirm"
+                        element={
+                            <Suspense fallback={<Loading />}>
+                                <BookConfirm />
+                            </Suspense>
+                        }
+                    />
                     <Route
                         path="/debug"
                         element={
-                            <Suspense fallback={<div style={{ padding: 16 }}>Cargando debug…</div>}>
+                            <Suspense fallback={<Loading />}>
                                 <DebugPage />
                             </Suspense>
                         }

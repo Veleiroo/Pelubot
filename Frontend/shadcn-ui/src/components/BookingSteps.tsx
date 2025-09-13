@@ -1,8 +1,5 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Check } from 'lucide-react';
-import { useBooking } from '@/store/booking';
+import { cn } from '@/lib/utils';
 
-export type Step = 'service' | 'date' | 'confirm';
 export type BookingStep = { key: string; label: string; active?: boolean; done?: boolean };
 
 export function BookingSteps({ steps }: { steps?: BookingStep[] }) {
@@ -34,6 +31,10 @@ export function BookingSteps({ steps }: { steps?: BookingStep[] }) {
     { key: 'date', label: 'Fecha y hora' },
     { key: 'confirm', label: 'Confirmar' },
   ];
+
+export function BookingSteps({ steps }: { steps: BookingStep[] }) {
+  const activeIdx = steps.findIndex((s) => s.active);
+  const progress = ((activeIdx >= 0 ? activeIdx + 1 : 0) / steps.length) * 100;
 
   return (
     <nav aria-label="Progreso de reserva" className="mx-auto max-w-4xl px-6 sm:px-8 mb-8">
@@ -73,3 +74,5 @@ export function BookingSteps({ steps }: { steps?: BookingStep[] }) {
     </nav>
   );
 }
+
+export default BookingSteps;
