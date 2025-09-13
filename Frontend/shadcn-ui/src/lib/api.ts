@@ -1,4 +1,6 @@
-const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8776";
+// Base de API robusto: si la env está vacía (""), usa fallback
+const _rawBase = String((import.meta as any).env?.VITE_API_BASE_URL ?? '').trim();
+const BASE = _rawBase || "http://127.0.0.1:8776";
 const API_KEY: string | undefined = import.meta.env.VITE_API_KEY;
 const DEBUG = /^(1|true|yes|y)$/i.test(String(import.meta.env.VITE_ENABLE_DEBUG ?? "0"));
 
@@ -28,6 +30,12 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
       const msg = `HTTP ${res.status}${rid ? ` [rid=${rid}]` : ''}${text ? `: ${text.slice(0,200)}` : ''}`;
       DEBUG && console.warn("HTTP ERR", res.status, url, `${ms}ms`, msg);
       throw new Error(msg);
+    }
+    // Asegurar Content-Type JSON; si no, lanza error legible para evitar "Unexpected token '<'".
+    const ctype = res.headers.get('content-type') || '';
+    if (!/application\/json/i.test(ctype)) {
+      const text = await res.text();
+      throw new Error(`Unexpected content-type: ${ctype || 'unknown'} body: ${text.slice(0,200)}`);
     }
     const data = await res.json() as T;
     DEBUG && console.debug("HTTP OK", res.status, url, `${ms}ms`, data);

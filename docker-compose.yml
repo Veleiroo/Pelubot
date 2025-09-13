@@ -43,6 +43,24 @@ services:
     ports:
       - "${FRONTEND_PORT:-8080}:80"
 
+  frontend-dev:
+    image: node:20-alpine
+    container_name: pelubot-frontend-dev
+    working_dir: /app
+    environment:
+      # El navegador accede a localhost:8776 desde tu máquina
+      - VITE_API_BASE_URL=http://localhost:${BACKEND_PORT:-8776}
+      - VITE_API_KEY=${API_KEY}
+      - VITE_ENABLE_DEBUG=1
+      - CHOKIDAR_USEPOLLING=1
+    volumes:
+      - ./Frontend/shadcn-ui:/app
+    command: sh -lc "corepack enable && corepack prepare pnpm@8.10.0 --activate && pnpm i && pnpm dev --host 0.0.0.0"
+    ports:
+      - "${FRONTEND_PORT:-8080}:5173"
+    depends_on:
+      - backend
+
   e2e:
     build:
       context: .

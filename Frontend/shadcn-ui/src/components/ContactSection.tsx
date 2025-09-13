@@ -21,7 +21,7 @@ export default function ContactSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            <span className="text-[#00D4AA]">Contacto</span> & Ubicación
+            <span className="text-brand">Contacto</span> & Ubicación
           </h2>
           <p className="text-gray-300 text-lg max-w-2xl mx-auto">
             Estamos aquí para ti. Reserva tu cita o visítanos en nuestro local. 
@@ -37,8 +37,8 @@ export default function ContactSection() {
               
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
-                  <div className="p-3 bg-[#00D4AA]/10 rounded-lg">
-                    <MapPin className="text-[#00D4AA]" size={24} />
+                  <div className="p-3 bg-brand/10 rounded-lg">
+                    <MapPin className="text-brand" size={24} />
                   </div>
                   <div>
                     <h4 className="text-white font-semibold mb-1">Dirección</h4>
@@ -50,8 +50,8 @@ export default function ContactSection() {
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="p-3 bg-[#00D4AA]/10 rounded-lg">
-                    <Phone className="text-[#00D4AA]" size={24} />
+                  <div className="p-3 bg-brand/10 rounded-lg">
+                    <Phone className="text-brand" size={24} />
                   </div>
                   <div>
                     <h4 className="text-white font-semibold mb-1">Teléfono</h4>
@@ -60,8 +60,8 @@ export default function ContactSection() {
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="p-3 bg-[#00D4AA]/10 rounded-lg">
-                    <Mail className="text-[#00D4AA]" size={24} />
+                  <div className="p-3 bg-brand/10 rounded-lg">
+                    <Mail className="text-brand" size={24} />
                   </div>
                   <div>
                     <h4 className="text-white font-semibold mb-1">Email</h4>
@@ -73,7 +73,7 @@ export default function ContactSection() {
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
                 <Button
                   onClick={handleWhatsApp}
-                  className="bg-[#00D4AA] hover:bg-[#00B894] text-black font-semibold flex items-center justify-center"
+                  className="bg-brand hover:bg-[#00B894] text-black font-semibold flex items-center justify-center"
                 >
                   <MessageCircle className="mr-2" size={20} />
                   WhatsApp
@@ -81,7 +81,7 @@ export default function ContactSection() {
                 <Button
                   onClick={handleCall}
                   variant="outline"
-                  className="border-[#00D4AA] text-[#00D4AA] hover:bg-[#00D4AA] hover:text-black flex items-center justify-center"
+                  className="border-brand text-brand hover:bg-brand hover:text-black flex items-center justify-center"
                 >
                   <Phone className="mr-2" size={20} />
                   Llamar
@@ -92,7 +92,7 @@ export default function ContactSection() {
             {/* Hours */}
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-lg p-8">
               <div className="flex items-center mb-6">
-                <Clock className="text-[#00D4AA] mr-3" size={24} />
+                <Clock className="text-brand mr-3" size={24} />
                 <h3 className="text-2xl font-bold text-white">Horarios</h3>
               </div>
               
@@ -107,12 +107,12 @@ export default function ContactSection() {
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-gray-300">Domingos</span>
-                  <span className="text-[#00D4AA] font-semibold">10:00 - 16:00</span>
+                  <span className="text-brand font-semibold">10:00 - 16:00</span>
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-[#00D4AA]/10 rounded-lg border border-[#00D4AA]/20">
-                <p className="text-[#00D4AA] text-sm font-semibold">
+              <div className="mt-6 p-4 bg-brand/10 rounded-lg border border-brand/20">
+                <p className="text-brand text-sm font-semibold">
                   💡 Consejo: Reserva con anticipación para garantizar tu horario preferido
                 </p>
               </div>
@@ -127,7 +127,7 @@ export default function ContactSection() {
               {/* Placeholder for map - you can replace with actual map */}
               <div className="bg-gray-800 rounded-lg h-64 flex items-center justify-center mb-6">
                 <div className="text-center">
-                  <MapPin className="text-[#00D4AA] mx-auto mb-2" size={48} />
+                  <MapPin className="text-brand mx-auto mb-2" size={48} />
                   <p className="text-gray-400">Mapa Interactivo</p>
                   <p className="text-gray-500 text-sm">Calle Principal 123, Madrid</p>
                 </div>
@@ -135,19 +135,19 @@ export default function ContactSection() {
 
               <div className="space-y-4">
                 <div className="flex items-center text-gray-300">
-                  <div className="w-2 h-2 bg-[#00D4AA] rounded-full mr-3"></div>
+                  <div className="w-2 h-2 bg-brand rounded-full mr-3"></div>
                   Fácil acceso en transporte público
                 </div>
                 <div className="flex items-center text-gray-300">
-                  <div className="w-2 h-2 bg-[#00D4AA] rounded-full mr-3"></div>
+                  <div className="w-2 h-2 bg-brand rounded-full mr-3"></div>
                   Parking disponible en la zona
                 </div>
                 <div className="flex items-center text-gray-300">
-                  <div className="w-2 h-2 bg-[#00D4AA] rounded-full mr-3"></div>
+                  <div className="w-2 h-2 bg-brand rounded-full mr-3"></div>
                   Ambiente moderno y acogedor
                 </div>
                 <div className="flex items-center text-gray-300">
-                  <div className="w-2 h-2 bg-[#00D4AA] rounded-full mr-3"></div>
+                  <div className="w-2 h-2 bg-brand rounded-full mr-3"></div>
                   Equipamiento de última generación
                 </div>
               </div>
@@ -155,7 +155,7 @@ export default function ContactSection() {
               <Button
                 onClick={handleWhatsApp}
                 size="lg"
-                className="w-full mt-8 bg-[#00D4AA] hover:bg-[#00B894] text-black font-bold"
+                className="w-full mt-8 bg-brand hover:bg-[#00B894] text-black font-bold"
               >
                 RESERVAR CITA AHORA
               </Button>
