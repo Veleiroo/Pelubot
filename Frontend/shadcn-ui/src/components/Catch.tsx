@@ -5,15 +5,19 @@ export function Catch(props: { fallback: React.ReactNode; children: React.ReactN
 }
 
 class CatchBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean }> {
-  constructor(props: any) {
+  constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false };
   }
-  static getDerivedStateFromError(_error: any) { return { hasError: true }; }
-  componentDidCatch(error: any, info: any) { try { console.error('CatchBoundary', error, info); } catch {} }
+  static getDerivedStateFromError(_error: unknown) {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown, info: React.ErrorInfo) {
+    console.error('CatchBoundary', error, info);
+  }
   render() {
-    if (this.state.hasError) return this.props.fallback as any;
-    return this.props.children as any;
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
   }
 }
 
