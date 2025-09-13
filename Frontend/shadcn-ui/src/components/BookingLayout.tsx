@@ -18,6 +18,7 @@ export function BookingLayout({ steps, title, subtitle, summary, children }: Boo
         {subtitle && <p className="text-neutral-400">{subtitle}</p>}
         {summary && <p className="text-sm text-neutral-300" aria-live="polite">{summary}</p>}
       </div>
+      {children}
     </div>
   );
 }

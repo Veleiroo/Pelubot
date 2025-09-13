@@ -9,8 +9,6 @@ import { ServiceCard } from '@/components/book/ServiceCard';
 import { Scissors, Palette, Sparkles, LucideIcon, Crown, Zap } from 'lucide-react';
 import { BookingSteps } from '@/components/BookingSteps';
 import { BookingLayout } from '@/components/BookingLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 const Service = () => {
   const navigate = useNavigate();
@@ -97,31 +95,15 @@ const Service = () => {
     <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {services.map((s) => (
-          <Card key={s.id} className="border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800 transition-colors">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl">{s.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-neutral-300">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  <span>Duración: {s.duration_min} minutos</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-neutral-300">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  <span>Precio: {s.price_eur} €</span>
-                </div>
-              </div>
-              <Button
-                onClick={() => onSelect(s)}
-                className="w-full"
-                size="lg"
-                aria-label={`Seleccionar servicio ${s.name}`}
-              >
-                Seleccionar
-              </Button>
-            </CardContent>
-          </Card>
+          <ServiceCard
+            key={s.id}
+            title={s.name}
+            duration={`${s.duration_min} minutos`}
+            price={`${s.price_eur} €`}
+            icon={iconMap[s.id]}
+            onSelect={() => onSelect(s)}
+            attrsId={`svc-${s.id}`}
+          />
         ))}
       </div>
     </BookingLayout>

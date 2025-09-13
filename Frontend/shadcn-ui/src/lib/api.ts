@@ -1,5 +1,5 @@
 // Base de API robusto: si la env está vacía (""), usa fallback
-const _rawBase = String((import.meta as any).env?.VITE_API_BASE_URL ?? '').trim();
+const _rawBase = String(import.meta.env?.VITE_API_BASE_URL ?? '').trim();
 const BASE = _rawBase || "http://127.0.0.1:8776";
 const API_KEY: string | undefined = import.meta.env.VITE_API_KEY;
 const DEBUG = /^(1|true|yes|y)$/i.test(String(import.meta.env.VITE_ENABLE_DEBUG ?? "0"));

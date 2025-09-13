@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import React, { Suspense, lazy } from 'react';
+import Loading from '@/components/Loading';
 
 const DebugPage = lazy(() => import('./Debug'));
 
@@ -11,7 +12,7 @@ export default function NotFoundPage() {
     const s = (loc.pathname || '') + (loc.search || '') + (loc.hash || '');
     if (/debug/i.test(s)) {
       return (
-        <Suspense fallback={<div style={{ padding: 16 }}>Cargando debug…</div>}>
+        <Suspense fallback={<Loading />}>
           <DebugPage />
         </Suspense>
       );
