@@ -68,10 +68,17 @@ const Service = () => {
       </BookingLayout>
     );
 
-  const onSelect = (id: string) => {
-    setService(id);
-    // Pasamos el servicio en la URL para evitar cualquier condición de carrera del store
-    navigate(`/book/date?service=${encodeURIComponent(id)}`);
+  if (!services.length)
+    return (
+      <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige el servicio que deseas reservar">
+        <div className="text-neutral-400">No hay servicios disponibles.</div>
+      </BookingLayout>
+    );
+
+  const onSelect = (svc: Svc) => {
+    setService(svc.id, svc.name);
+    // Pasamos el servicio en la URL para evitar cualquier condición de carrera del store.
+    navigate(`/book/date?service=${encodeURIComponent(svc.id)}`);
   };
 
   return (
@@ -93,7 +100,12 @@ const Service = () => {
                   <span>Precio: {s.price_eur} €</span>
                 </div>
               </div>
-              <Button onClick={() => onSelect(s.id)} className="w-full" size="lg">
+              <Button
+                onClick={() => onSelect(s)}
+                className="w-full"
+                size="lg"
+                aria-label={`Seleccionar servicio ${s.name}`}
+              >
                 Seleccionar
               </Button>
             </CardContent>

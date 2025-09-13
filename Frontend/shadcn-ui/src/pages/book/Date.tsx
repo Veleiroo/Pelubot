@@ -2,11 +2,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useBooking } from '@/store/booking';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-// Calendario visual (opcional): si VITE_ENABLE_CALENDAR está activo, se muestra; si no,
-// el usuario puede usar el selector nativo de fecha. En ambos casos habrá lista de huecos.
+// Calendario visual opcional. Si `VITE_ENABLE_CALENDAR` está activo se muestra; en caso contrario el usuario usa el selector nativo de fecha. En ambos casos se listan los huecos.
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
@@ -28,8 +26,9 @@ const ANY_PRO = '__any__';
 const BookDate = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { serviceId, professionalId, slotStart, setProfessional, setDate, setSlot, setService } = useBooking((s) => ({
+  const { serviceId, serviceName, professionalId, slotStart, setProfessional, setDate, setSlot, setService } = useBooking((s) => ({
     serviceId: s.serviceId,
+    serviceName: s.serviceName,
     professionalId: s.professionalId,
     slotStart: s.slotStart,
     setProfessional: s.setProfessional,
@@ -43,14 +42,14 @@ const BookDate = () => {
   const [loading, setLoading] = useState(false);
   const [pros, setPros] = useState<{ id: string; name: string; services?: string[] }[]>([]);
   const [slots, setSlots] = useState<string[]>([]);
-  const [useGcal, setUseGcal] = useState<boolean>(false);
+  const [useGcal] = useState<boolean>(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const daysAbort = useRef<AbortController | null>(null);
   const slotsAbort = useRef<AbortController | null>(null);
   const daysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slotsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Leer servicio de la URL (fallback por si el estado aún no está)
+  // Lee el servicio de la URL como respaldo por si el estado aún no está sincronizado.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const sid = params.get('service') || undefined;
@@ -60,6 +59,20 @@ const BookDate = () => {
       setService(sid);
     }
   }, [location.search, serviceId, setService]);
+
+  // Si solo tenemos el ID del servicio, obtenemos su nombre para mostrarlo en el resumen.
+  useEffect(() => {
+    if (!serviceId || serviceName) return;
+    (async () => {
+      try {
+        const items = await api.getServices();
+        const found = items.find((s) => s.id === serviceId);
+        if (found) setService(serviceId, found.name);
+      } catch {
+        /* noop */
+      }
+    })();
+  }, [serviceId, serviceName, setService]);
   useEffect(() => {
     const sid = new URLSearchParams(location.search).get('service');
     // Si no hay servicio en el store ni en la URL, volver al selector de servicio.
@@ -118,7 +131,7 @@ const BookDate = () => {
     return t;
   }, []);
 
-  // límite: hoy + 6 meses
+  // Límite: hoy + 6 meses.
   const maxDate = useMemo(() => {
     const d = new Date(today);
     d.setMonth(d.getMonth() + 6);
@@ -133,14 +146,14 @@ const BookDate = () => {
   };
 
   const selectedValid = selected && !isDisabled(selected as Date);
-  const canContinue = !!slotStart; // requiere elegir un hueco
+  const canContinue = !!slotStart; // Requiere elegir un hueco.
 
   const onNext = () => {
     if (!selectedValid || slots.length === 0) return;
     navigate('/book/confirm');
   };
 
-  // Al seleccionar fecha válida, pedir huecos
+  // Al seleccionar una fecha válida se solicitan los huecos.
   useEffect(() => {
     if (!serviceId) return;
     if (!selectedValid) {
@@ -183,7 +196,7 @@ const BookDate = () => {
     { key: 'confirm', label: 'Confirmar' },
   ];
 
-  // Fallback mínimo por si algo falla antes de montar el calendario
+  // Fallback mínimo por si algo falla antes de montar el calendario.
   if (!serviceId && !new URLSearchParams(location.search).get('service')) {
     return (
       <BookingLayout steps={steps} title="Selecciona un servicio" subtitle="Elige un servicio para continuar">
@@ -200,11 +213,12 @@ const BookDate = () => {
       steps={steps}
       title="Selecciona fecha y hora"
       subtitle="Elige cuándo quieres tu cita"
+      summary={serviceId ? `Servicio: ${serviceName ?? serviceId}` : undefined}
     >
       <div className="flex items-center gap-3">
-        <span>Profesional:</span>
+        <Label htmlFor="professional-select">Profesional:</Label>
         <Select value={professionalId ?? ANY_PRO} onValueChange={(v) => setProfessional(v === ANY_PRO ? null : v)}>
-          <SelectTrigger className="w-64">
+          <SelectTrigger id="professional-select" className="w-64" aria-label="Seleccionar profesional">
             <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
@@ -221,6 +235,7 @@ const BookDate = () => {
         <div className="flex flex-col items-center gap-3">
           <div className="rounded-md border border-neutral-800 bg-neutral-900 p-3 w-full max-w-[360px]">
             <Calendar
+              aria-label="Calendario de fechas disponibles"
               mode="single"
               month={month}
               onMonthChange={setMonth}
@@ -248,7 +263,7 @@ const BookDate = () => {
         )}
         
       </div>
-      {/* Huecos disponibles */}
+      {/* Huecos disponibles. */}
       <div className="space-y-4">
         <div className="text-center">
           <h3 className="text-lg font-semibold mb-2">
@@ -283,11 +298,11 @@ const BookDate = () => {
                 }`}
                 onClick={() => {
                   setSlot(iso);
-                  // asegura fecha en store
+                  // Asegura la fecha en el store.
                   if (selectedValid) {
                     setDate(toYmd(selected as Date));
                   }
-                  // Navegar a Confirmar pasando parámetros robustos
+                  // Navega a Confirmar pasando parámetros robustos.
                   const params = new URLSearchParams();
                   if (serviceId) params.set('service', serviceId);
                   params.set('start', iso);
