@@ -262,24 +262,51 @@ const BookDate = () => {
   }, [gridStart, gridEnd, monthStart, focusedDate]);
 
   return (
-    <>
-      <BookingSteps />
-      <BookingSection title="Selecciona fecha y hora" subtitle="Elige cuándo quieres tu cita">
-        <div className="mb-2 flex items-center gap-3">
-          <span>Profesional:</span>
-          <Select value={professionalId ?? ANY_PRO} onValueChange={(v) => setProfessional(v === ANY_PRO ? null : v)}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder="Cualquiera" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ANY_PRO}>Cualquiera</SelectItem>
-              {pros.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <BookingLayout
+      steps={steps}
+      title="Selecciona fecha y hora"
+      subtitle="Elige cuándo quieres tu cita"
+      summary={serviceId ? `Servicio: ${serviceId}` : undefined}
+    >
+      <div className="flex items-center gap-3">
+        <Label htmlFor="professional-select">Profesional:</Label>
+        <Select value={professionalId ?? ANY_PRO} onValueChange={(v) => setProfessional(v === ANY_PRO ? null : v)}>
+          <SelectTrigger id="professional-select" className="w-64" aria-label="Seleccionar profesional">
+            <SelectValue placeholder="Cualquiera" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ANY_PRO}>Cualquiera</SelectItem>
+            {pros.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="relative">
+        <div className="flex flex-col items-center gap-3">
+          <div className="rounded-md border border-neutral-800 bg-neutral-900 p-3 w-full max-w-[360px]">
+            <Calendar
+              aria-label="Calendario de fechas disponibles"
+              mode="single"
+              month={month}
+              onMonthChange={setMonth}
+              selected={selected}
+              onSelect={setSelected}
+              disabled={isDisabled}
+              locale={es}
+              captionLayout="dropdown-buttons"
+              fromDate={today}
+              toDate={maxDate}
+              className="rounded-md"
+              modifiers={{ available: (day) => avail.has(toYmd(day as Date)) }}
+              modifiersClassNames={{ available: 'text-green-300 font-medium' }}
+            />
+          </div>
+          <div className="text-xs text-neutral-400">
+            Días en verde = hay disponibilidad para el servicio elegido.
+          </div>
         </div>
         <div className="relative">
           <Card className="rounded-2xl border border-[var(--border)] bg-[var(--card)] backdrop-blur shadow-lg shadow-black/20 w-full">

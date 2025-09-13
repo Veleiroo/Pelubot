@@ -22,8 +22,16 @@ const BookConfirm = () => {
 
   useEffect(() => {
     (async () => {
-      try { setServices(await api.getServices()); } catch {}
-      try { setPros(await api.getProfessionals()); } catch {}
+      try {
+        setServices(await api.getServices());
+      } catch {
+        /* noop */
+      }
+      try {
+        setPros(await api.getProfessionals());
+      } catch {
+        /* noop */
+      }
     })();
   }, []);
 

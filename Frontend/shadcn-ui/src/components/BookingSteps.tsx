@@ -35,41 +35,38 @@ export function BookingSteps({ steps }: { steps?: BookingStep[] }) {
     { key: 'confirm', label: 'Confirmar' },
   ];
 
+export function BookingSteps({ steps }: { steps: BookingStep[] }) {
+  const activeIdx = steps.findIndex((s) => s.active);
+  const progress = ((activeIdx >= 0 ? activeIdx + 1 : 0) / steps.length) * 100;
+
   return (
-    <nav aria-label="Progreso de reserva" className="mx-auto max-w-4xl px-6 sm:px-8 mb-8">
-      <ol className="flex items-center justify-between">
-        {items.map((s, i) => {
-          const isCurrent = s.key === current;
-          const isDone = completed(s.key);
-          const enabled = canGo(s.key) || isDone || isCurrent;
-          return (
-            <li key={s.key} className="flex flex-col items-center">
-              <button
-                aria-current={isCurrent ? 'step' : undefined}
-                aria-label={s.label}
-                disabled={!enabled}
-                onClick={() => enabled && go(s.key)}
-                className={[
-                  'flex items-center justify-center w-9 h-9 rounded-full text-xs font-semibold transition-colors duration-150',
-                  isDone
-                    ? 'bg-accent text-[var(--accent-contrast)]'
-                    : isCurrent
-                    ? 'ring-2 ring-[var(--accent)] text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                ].join(' ')}
-              >
-                {isDone ? <Check className="h-4 w-4" /> : <span>{i + 1}</span>}
-              </button>
-              <span className={[
-                'mt-2 text-xs transition-colors duration-150',
-                isCurrent ? 'text-foreground font-medium' : isDone ? 'text-foreground' : 'text-muted-foreground',
-              ].join(' ')}>
-                {s.label}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
+    <div className="mb-4" aria-label="Progreso de reserva">
+      <div className="h-1 bg-neutral-800 rounded">
+        <div
+          className="h-full bg-[#00D4AA] rounded transition-all"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="flex items-center gap-3 text-sm mt-2" role="list">
+        {steps.map((s, i) => (
+          <div key={s.key} className="flex items-center gap-3" role="listitem">
+            <div
+              className={cn(
+                'px-2 py-1 rounded border',
+                s.active
+                  ? 'border-[#00D4AA] text-[#00D4AA]'
+                  : s.done
+                  ? 'border-neutral-600 text-neutral-300'
+                  : 'border-neutral-800 text-neutral-500'
+              )}
+              aria-current={s.active ? 'step' : undefined}
+            >
+              <span className="font-medium mr-1">{i + 1}.</span> {s.label}
+            </div>
+            {i < steps.length - 1 && <div className="w-6 h-px bg-neutral-700" />}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
